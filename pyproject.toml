@@ -23,10 +23,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Typing :: Typed",
 ]
-dependencies = ["genomicranges", "pandas", "requests"]
+dependencies = ["pandas", "requests"]
 
 [project.optional-dependencies]
 develop = ["pytest", "pytest-cov", "ruff", "uv"]
+extra = ["genomicranges"]
 
 [project.urls]
 Homepage = "https://github.com/acidgenomics/py-acidgenomes"
@@ -39,7 +40,7 @@ addopts = "-v --tb=short"
 [tool.ruff]
 indent-width = 4
 line-length = 100
-target-version = "py314"
+target-version = "py311"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -65,9 +66,9 @@ select = [
     "W",   # pycodestyle
 ]
 ignore = [
-    "D203", # one-blank-line-before-class
-    "D213", # multi-line-summary-second-line
-    "D401", # non-imperative-mood
+    "D203",   # one-blank-line-before-class
+    "D213",   # multi-line-summary-second-line
+    "D401",   # non-imperative-mood
     "ANN401", # dynamically-typed-expression
 ]
 
