@@ -8,7 +8,7 @@ version = "0.0.1"
 description = "Toolkit for downloading and processing genome annotations."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 authors = [{ name = "Michael Steinbaugh", email = "mike@steinbaugh.com" }]
 keywords = ["bioinformatics", "genomics", "annotation"]
 classifiers = [
@@ -16,6 +16,9 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Typing :: Typed",
