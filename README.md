@@ -1,4 +1,4 @@
-# AcidGenomes
+# acidgenomes
 
 Toolkit for downloading and processing genome annotations.
 
