@@ -1,0 +1,98 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acidgenomes"
+version = "0.0.1"
+description = "Toolkit for downloading and processing genome annotations."
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.12"
+authors = [{ name = "Michael Steinbaugh", email = "mike@steinbaugh.com" }]
+keywords = ["bioinformatics", "genomics", "annotation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Typing :: Typed",
+]
+dependencies = ["genomicranges", "pandas", "requests"]
+
+[project.optional-dependencies]
+develop = ["pytest", "pytest-cov", "ruff", "uv"]
+
+[project.urls]
+Homepage = "https://github.com/acidgenomics/py-acidgenomes"
+Repository = "https://github.com/acidgenomics/py-acidgenomes"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+indent-width = 4
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 72
+quote-style = "double"
+
+[tool.ruff.lint]
+# List of rules: https://docs.astral.sh/ruff/rules/
+select = [
+    "ANN", # flake8-annotations
+    "B",   # flake8-bugbear
+    "C90", # mccabe
+    "D",   # pydocstyle
+    "E",   # pycodestyle
+    "F",   # PyFlakes
+    "FIX", # flake8-fixme
+    "I",   # isort
+    "N",   # pep8-naming
+    "NPY", # NumPy-specific rules,
+    "PL",  # pylint
+    "SIM", # flake8-simplify
+    "UP",  # pyupgrade
+    "W",   # pycodestyle
+]
+ignore = [
+    "D203", # one-blank-line-before-class
+    "D213", # multi-line-summary-second-line
+    "D401", # non-imperative-mood
+    "ANN401", # dynamically-typed-expression
+]
+
+[tool.ruff.lint.isort]
+extra-standard-library = ["typing"]
+known-first-party = []
+order-by-type = true
+relative-imports-order = "closest-to-furthest"
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 100
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.pylint]
+allow-magic-value-types = ["bytes", "int", "str"]
+max-args = 10
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "E402", "PLC0415"]
