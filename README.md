@@ -1,11 +1,21 @@
-# AcidGenomes (Python)
+# AcidGenomes
 
 Toolkit for downloading and processing genome annotations.
 
 ## Installation
 
-```bash
-uv pip install acidgenomes
+This is a [Python][] package.
+We recommend using [uv][] to install.
+
+```sh
+uv venv './.venv'
+source './.venv/bin/activate'
+uv pip install 'git+https://github.com/acidgenomics/py-acidgenomes'
+python3
+```
+
+```python
+import acidgenomes
 ```
 
 ## Quick start
@@ -56,3 +66,6 @@ ag.map_gene_names_to_hgnc(["TP53", "BRCA1"])
 # Update outdated gene symbols
 ag.update_gene_symbols(["ZCCHC11"], organism="Homo sapiens")
 ```
+
+[python]: https://www.python.org/
+[uv]: https://docs.astral.sh/uv/
