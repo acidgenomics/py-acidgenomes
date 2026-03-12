@@ -1,14 +1,4 @@
-"""AcidGenomes -- Toolkit for downloading and processing genome annotations.
-
-This is a Python port of the R/Bioconductor AcidGenomes package.
-"""
-
-from importlib.metadata import PackageNotFoundError, version
-
-try:
-    __version__ = version("acidgenomes")
-except PackageNotFoundError:
-    __version__ = "0.0.0.dev0"
+"""AcidGenomes -- Toolkit for downloading and processing genome annotations."""
 
 # ---- Classes ----------------------------------------------------------------
 from acidgenomes._classes import (
