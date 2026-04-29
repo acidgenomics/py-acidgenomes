@@ -550,7 +550,7 @@ def _ensembl_ftp_gene_metadata(
     entrez["xref"] = entrez["xref"].astype(int)
     df_entrez = (
         entrez.groupby("gene_stable_id")["xref"]
-        .apply(lambda x: x.tolist() if len(x) > 1 else x.iloc[0])
+        .apply(lambda x: "|".join(sorted(set(x.astype(str)))))
         .reset_index()
     )
     df_entrez.columns = ["gene_id", "ncbi_gene_id"]
