@@ -594,9 +594,9 @@ def _ensembl_gtf_genes(
             rows.append(
                 {
                     "end": int(fields[4]),
-                    "gene_biotype": attrs.get("gene_biotype", ""),
-                    "gene_id": attrs.get("gene_id", ""),
-                    "gene_name": attrs.get("gene_name", ""),
+                    "gene_biotype": attrs.get("gene_biotype") or None,
+                    "gene_id": attrs.get("gene_id") or None,
+                    "gene_name": attrs.get("gene_name") or None,
                     "seqnames": fields[0],
                     "start": int(fields[3]),
                     "strand": fields[6],
