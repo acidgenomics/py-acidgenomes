@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../r-acidgenomes"
 		}
 	],
 	"settings": {

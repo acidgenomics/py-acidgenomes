@@ -31,6 +31,8 @@ from acidgenomes._classes import (
 )
 from acidgenomes._data import NCBI_TAX_IDS, NCBI_TAXONOMIC_GROUPS
 from acidgenomes._detect import detect_organism
+from acidgenomes._genome_build import current_ensembl_genome_build
+from acidgenomes._genome_version import current_ensembl_version
 
 logger = logging.getLogger(__name__)
 
@@ -382,6 +384,183 @@ def _find_merge_column(hs: pd.DataFrame, mm: pd.DataFrame) -> str:
 # -------------------------------------------------------------------------
 
 
+_NONCODING_BIOTYPES = frozenset({
+    "known_ncrna",
+    "lincRNA",
+    "lncRNA",
+    "non_coding",
+})
+
+_SMALL_BIOTYPES = frozenset({
+    "miRNA",
+    "misc_RNA",
+    "ribozyme",
+    "rRNA",
+    "scaRNA",
+    "scRNA",
+    "snoRNA",
+    "snRNA",
+    "sRNA",
+})
+
+_DECAYING_BIOTYPES = frozenset({
+    "non_stop_decay",
+    "nonsense_mediated_decay",
+})
+
+
+def _apply_broad_class(
+    biotype: str | None,
+    chromosome: str | None,
+    gene_name: str | None,
+) -> str:
+    """Classify a gene into a broad semantic class based on its biotype.
+
+    Ported from R `.applyBroadClass`.
+    """
+    chr_str = str(chromosome) if chromosome is not None else ""
+    name_str = str(gene_name) if gene_name is not None else ""
+    if re.match(r"(?i)^MT", chr_str) or re.match(r"(?i)^mt[:\-]", name_str):
+        return "mito"
+    if biotype is None:
+        return "other"
+    if biotype == "protein_coding":
+        return "coding"
+    if biotype in _NONCODING_BIOTYPES:
+        return "noncoding"
+    if "pseudo" in biotype.lower():
+        return "pseudo"
+    if biotype in _SMALL_BIOTYPES:
+        return "small"
+    if biotype in _DECAYING_BIOTYPES:
+        return "decaying"
+    if re.match(r"(?i)^ig_", biotype):
+        return "ig"
+    if re.match(r"(?i)^tr_", biotype):
+        return "tcr"
+    return "other"
+
+
+def _add_broad_class(df: pd.DataFrame) -> pd.DataFrame:
+    """Add a ``broad_class`` column derived from biotype, chromosome, and gene name."""
+    biotype_col = None
+    for c in ("gene_biotype", "biotype"):
+        if c in df.columns:
+            biotype_col = c
+            break
+    chr_col = None
+    for c in ("seqnames", "chromosome", "seq_name", "chr"):
+        if c in df.columns:
+            chr_col = c
+            break
+    name_col = "gene_name" if "gene_name" in df.columns else None
+    df["broad_class"] = [
+        _apply_broad_class(
+            biotype=row.get(biotype_col) if biotype_col else None,
+            chromosome=row.get(chr_col) if chr_col else None,
+            gene_name=row.get(name_col) if name_col else None,
+        )
+        for _, row in df.iterrows()
+    ]
+    return df
+
+
+def _ensembl_mysql_subdir(
+    organism: str,
+    release: int,
+    genome_build: str,
+) -> str:
+    """Construct the Ensembl MySQL FTP subdirectory name."""
+    slug = organism.lower().replace(" ", "_")
+    suffix = re.sub(r"^[A-Za-z]+", "", re.sub(r"\.p\d+$", "", genome_build))
+    return f"{slug}_core_{release}_{suffix}"
+
+
+def _ensembl_ftp_gene_metadata(
+    organism: str,
+    genome_build: str,
+    release: int,
+) -> pd.DataFrame | None:
+    """Fetch extra gene-level metadata from the Ensembl FTP server.
+
+    Downloads gene descriptions, gene synonyms, and NCBI gene ID
+    cross-references from the Ensembl MySQL dump files and the
+    Ensembl-to-Entrez TSV mapping.
+
+    Returns None if any required download fails.
+    """
+    genome_build = re.sub(r"\.p\d+$", "", genome_build)
+    ftp_base = f"https://ftp.ensembl.org/pub/release-{release}"
+    mysql_subdir = _ensembl_mysql_subdir(organism, release, genome_build)
+    # -- gene.txt.gz ----------------------------------------------------------
+    gene_url = f"{ftp_base}/mysql/{mysql_subdir}/gene.txt.gz"
+    try:
+        gene_path = cache_url(gene_url)
+        gene = pd.read_csv(
+            gene_path, sep="\t", header=None, na_values=["\\N"], quoting=3,
+        )
+    except Exception:
+        logger.warning("Failed to download gene metadata: %s", gene_url)
+        return None
+    ncol = gene.shape[1]
+    if ncol == 16:
+        gene_col_map = {"mysql_id": 7, "gene_id": 12, "description": 9}
+    elif ncol == 17:
+        gene_col_map = {"mysql_id": 7, "gene_id": 13, "description": 10}
+    else:
+        logger.warning("Unsupported gene.txt column count: %d", ncol)
+        return None
+    df_gene = gene.iloc[:, list(gene_col_map.values())].copy()
+    df_gene.columns = list(gene_col_map.keys())
+    df_gene = df_gene.dropna().drop_duplicates()
+    # -- external_synonym.txt.gz ----------------------------------------------
+    syn_url = f"{ftp_base}/mysql/{mysql_subdir}/external_synonym.txt.gz"
+    try:
+        syn_path = cache_url(syn_url)
+        synonym = pd.read_csv(
+            syn_path, sep="\t", header=None, na_values=["\\N"], quoting=3,
+        )
+    except Exception:
+        logger.warning("Failed to download synonyms: %s", syn_url)
+        return None
+    synonym = synonym.dropna().drop_duplicates()
+    df_syn = (
+        synonym.groupby(synonym.columns[0])[synonym.columns[1]]
+        .apply(lambda x: "|".join(sorted(set(x.astype(str)))))
+        .reset_index()
+    )
+    df_syn.columns = ["mysql_id", "gene_synonyms"]
+    # -- Entrez TSV -----------------------------------------------------------
+    org_underscore = organism.replace(" ", "_")
+    entrez_url = (
+        f"{ftp_base}/tsv/{org_underscore.lower()}/"
+        f"{org_underscore}.{genome_build}.{release}.entrez.tsv.gz"
+    )
+    try:
+        entrez_path = cache_url(entrez_url)
+        entrez = pd.read_csv(
+            entrez_path, sep="\t", na_values=["\\N"], quoting=3,
+        )
+    except Exception:
+        logger.warning("Failed to download Entrez mapping: %s", entrez_url)
+        return None
+    entrez = entrez[["gene_stable_id", "xref"]].dropna().drop_duplicates()
+    entrez = entrez[entrez["xref"].astype(str).str.fullmatch(r"\d+")]
+    entrez["xref"] = entrez["xref"].astype(int)
+    df_entrez = (
+        entrez.groupby("gene_stable_id")["xref"]
+        .apply(lambda x: x.tolist() if len(x) > 1 else x.iloc[0])
+        .reset_index()
+    )
+    df_entrez.columns = ["gene_id", "ncbi_gene_id"]
+    # -- Join all three -------------------------------------------------------
+    out = df_gene.merge(df_syn, on="mysql_id", how="left")
+    out = out.merge(df_entrez, on="gene_id", how="left")
+    out = out.drop(columns=["mysql_id"])
+    out = out[sorted(out.columns)]
+    return out
+
+
 def make_ensembl_genes(
     df: pd.DataFrame,
     organism: str | None = None,
@@ -409,6 +588,40 @@ def make_ensembl_genes(
         raise ValueError("DataFrame must contain a 'gene_id' column.")
     if organism is None:
         organism = detect_organism(df["gene_id"].dropna().tolist())
+    if genome_build is None:
+        try:
+            genome_build = current_ensembl_genome_build(organism)
+        except Exception:
+            logger.warning("Failed to detect genome build for '%s'.", organism)
+    if release is None:
+        try:
+            release = current_ensembl_version()
+        except Exception:
+            logger.warning("Failed to detect current Ensembl release.")
+    needs_enrichment = not {"description", "gene_synonyms", "ncbi_gene_id"}.issubset(
+        df.columns,
+    )
+    if needs_enrichment and genome_build is not None and release is not None:
+        logger.info("Downloading extra gene-level metadata from Ensembl.")
+        extra = _ensembl_ftp_gene_metadata(
+            organism=organism,
+            genome_build=genome_build,
+            release=release,
+        )
+        if extra is not None:
+            gene_id_col = "gene_id"
+            if not ignore_version and "gene_id_no_version" in df.columns:
+                gene_id_col = "gene_id_no_version"
+            for col in ("description", "gene_synonyms", "ncbi_gene_id"):
+                if col in df.columns:
+                    extra = extra.drop(columns=[col], errors="ignore")
+            df = df.merge(extra, left_on=gene_id_col, right_on="gene_id", how="left", suffixes=("", "_ftp"))
+            if "gene_id_ftp" in df.columns:
+                df = df.drop(columns=["gene_id_ftp"])
+    if "broad_class" not in df.columns and (
+        "gene_biotype" in df.columns or "biotype" in df.columns
+    ):
+        df = _add_broad_class(df)
     meta: dict[str, Any] = {
         "date": date.today(),
         "ignore_version": ignore_version,
