@@ -35,6 +35,7 @@ from acidgenomes._classes import (
 # ---- Constructors -----------------------------------------------------------
 from acidgenomes._constructors import (
     make_ensembl_genes,
+    make_ensembl_genes_from_gtf,
     make_ensembl_to_ncbi,
     make_gene_to_symbol,
     make_hgnc,
@@ -113,6 +114,7 @@ __all__ = [
     "WormbaseGenes",
     "WormbaseTranscripts",
     "make_ensembl_genes",
+    "make_ensembl_genes_from_gtf",
     "make_ensembl_to_ncbi",
     "make_gene_to_symbol",
     "make_hgnc",

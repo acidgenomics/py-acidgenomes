@@ -8,6 +8,7 @@ Ported from ``Hgnc.R``, ``Mgi.R``, ``NcbiGeneInfo.R``, ``NcbiGeneHistory.R``,
 
 from __future__ import annotations
 
+import gzip
 import io
 import logging
 import re
@@ -559,6 +560,102 @@ def _ensembl_ftp_gene_metadata(
     out = out.drop(columns=["mysql_id"])
     out = out[sorted(out.columns)]
     return out
+
+
+def _ensembl_gtf_genes(
+    organism: str,
+    genome_build: str,
+    release: int,
+) -> pd.DataFrame:
+    """Download an Ensembl GTF and return gene-level rows as a DataFrame."""
+    genome_build = re.sub(r"\.p\d+$", "", genome_build)
+    slug = organism.replace(" ", "_")
+    url = (
+        f"https://ftp.ensembl.org/pub/release-{release}/gtf/{slug.lower()}/"
+        f"{slug}.{genome_build}.{release}.gtf.gz"
+    )
+    path = cache_url(url)
+    rows: list[dict] = []
+    with gzip.open(path, "rt") as fh:
+        for line in fh:
+            if line.startswith("#"):
+                continue
+            fields = line.rstrip("\n").split("\t")
+            if fields[2] != "gene":
+                continue
+            attrs: dict[str, str] = {}
+            for pair in fields[8].split(";"):
+                pair = pair.strip()
+                if not pair:
+                    continue
+                m = re.match(r'(\w+)\s+"(.+?)"', pair)
+                if m:
+                    attrs[m.group(1)] = m.group(2)
+            rows.append(
+                {
+                    "end": int(fields[4]),
+                    "gene_biotype": attrs.get("gene_biotype", ""),
+                    "gene_id": attrs.get("gene_id", ""),
+                    "gene_name": attrs.get("gene_name", ""),
+                    "seqnames": fields[0],
+                    "start": int(fields[3]),
+                    "strand": fields[6],
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def make_ensembl_genes_from_gtf(
+    organism: str,
+    *,
+    genome_build: str | None = None,
+    release: int | None = None,
+    ignore_version: bool = True,
+) -> EnsemblGenes:
+    """Create an EnsemblGenes object from the Ensembl GTF.
+
+    Downloads the current Ensembl GTF for the given organism, parses
+    gene-level annotations, and enriches with metadata from the Ensembl
+    FTP server. This is the Python equivalent of R ``makeGRangesFromEnsembl``.
+
+    Parameters
+    ----------
+    organism : str
+        Latin organism name (e.g. ``'Homo sapiens'``, ``'Mus musculus'``).
+    genome_build : str or None
+        Ensembl genome build (e.g. ``'GRCh38'``).
+        Auto-detected if ``None``.
+    release : int or None
+        Ensembl release version (e.g. ``115``).
+        Auto-detected if ``None``.
+    ignore_version : bool
+        Strip version suffixes from gene identifiers.
+
+    Returns
+    -------
+    EnsemblGenes
+
+    Examples
+    --------
+    >>> genes = make_ensembl_genes_from_gtf("Homo sapiens")
+    >>> genes = make_ensembl_genes_from_gtf("Mus musculus")
+    """
+    if genome_build is None:
+        genome_build = current_ensembl_genome_build(organism)
+    if release is None:
+        release = current_ensembl_version()
+    df = _ensembl_gtf_genes(
+        organism=organism,
+        genome_build=genome_build,
+        release=release,
+    )
+    return make_ensembl_genes(
+        df,
+        organism=organism,
+        genome_build=genome_build,
+        release=release,
+        ignore_version=ignore_version,
+    )
 
 
 def make_ensembl_genes(
