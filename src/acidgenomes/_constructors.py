@@ -6,14 +6,11 @@ Ported from ``Hgnc.R``, ``Mgi.R``, ``NcbiGeneInfo.R``, ``NcbiGeneHistory.R``,
 ``TxToGene-methods.R``.
 """
 
-from __future__ import annotations
-
-import gzip
 import io
 import logging
 import re
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -34,6 +31,7 @@ from acidgenomes._data import NCBI_TAX_IDS, NCBI_TAXONOMIC_GROUPS
 from acidgenomes._detect import detect_organism
 from acidgenomes._genome_build import current_ensembl_genome_build
 from acidgenomes._genome_version import current_ensembl_version
+from acidgenomes.gff import make_granges_from_gff
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +140,7 @@ def make_mgi() -> Mgi:
         io.StringIO(data_text),
         sep="\t",
         header=None,
-        names=col_names + ["_extra"],
+        names=[*col_names, "_extra"],
         na_values=["null", "NA"],
         dtype=str,
     )
@@ -410,7 +408,7 @@ _DECAYING_BIOTYPES = frozenset({
 })
 
 
-def _apply_broad_class(
+def _apply_broad_class(  # noqa: PLR0911
     biotype: str | None,
     chromosome: str | None,
     gene_name: str | None,
@@ -562,47 +560,14 @@ def _ensembl_ftp_gene_metadata(
     return out
 
 
-def _ensembl_gtf_genes(
-    organism: str,
-    genome_build: str,
-    release: int,
-) -> pd.DataFrame:
-    """Download an Ensembl GTF and return gene-level rows as a DataFrame."""
+def _ensembl_gtf_url(organism: str, genome_build: str, release: int) -> str:
+    """Build the Ensembl FTP URL for a GTF file."""
     genome_build = re.sub(r"\.p\d+$", "", genome_build)
     slug = organism.replace(" ", "_")
-    url = (
+    return (
         f"https://ftp.ensembl.org/pub/release-{release}/gtf/{slug.lower()}/"
         f"{slug}.{genome_build}.{release}.gtf.gz"
     )
-    path = cache_url(url)
-    rows: list[dict] = []
-    with gzip.open(path, "rt") as fh:
-        for line in fh:
-            if line.startswith("#"):
-                continue
-            fields = line.rstrip("\n").split("\t")
-            if fields[2] != "gene":
-                continue
-            attrs: dict[str, str] = {}
-            for pair in fields[8].split(";"):
-                pair = pair.strip()
-                if not pair:
-                    continue
-                m = re.match(r'(\w+)\s+"(.+?)"', pair)
-                if m:
-                    attrs[m.group(1)] = m.group(2)
-            rows.append(
-                {
-                    "end": int(fields[4]),
-                    "gene_biotype": attrs.get("gene_biotype") or None,
-                    "gene_id": attrs.get("gene_id") or None,
-                    "gene_name": attrs.get("gene_name") or None,
-                    "seqnames": fields[0],
-                    "start": int(fields[3]),
-                    "strand": fields[6],
-                }
-            )
-    return pd.DataFrame(rows)
 
 
 def make_ensembl_genes_from_gtf(
@@ -615,8 +580,8 @@ def make_ensembl_genes_from_gtf(
     """Create an EnsemblGenes object from the Ensembl GTF.
 
     Downloads the current Ensembl GTF for the given organism, parses
-    gene-level annotations, and enriches with metadata from the Ensembl
-    FTP server. This is the Python equivalent of R ``makeGRangesFromEnsembl``.
+    gene-level annotations via the GFF parsing engine, and enriches with
+    metadata from the Ensembl FTP server.
 
     Parameters
     ----------
@@ -644,11 +609,11 @@ def make_ensembl_genes_from_gtf(
         genome_build = current_ensembl_genome_build(organism)
     if release is None:
         release = current_ensembl_version()
-    df = _ensembl_gtf_genes(
-        organism=organism,
-        genome_build=genome_build,
-        release=release,
-    )
+    url = _ensembl_gtf_url(organism, genome_build, release)
+    path = cache_url(url)
+    gr = make_granges_from_gff(path, level="genes", ignore_version=ignore_version)
+    # Convert to DataFrame for enrichment pipeline, then wrap in EnsemblGenes.
+    df = gr.to_pandas()
     return make_ensembl_genes(
         df,
         organism=organism,
@@ -658,7 +623,56 @@ def make_ensembl_genes_from_gtf(
     )
 
 
-def make_ensembl_genes(
+def make_granges_from_ensembl(
+    organism: str,
+    *,
+    level: Literal["genes", "transcripts", "exons"] = "genes",
+    genome_build: str | None = None,
+    release: int | None = None,
+    ignore_version: bool = False,
+    extra_mcols: bool = False,
+) -> Any:
+    """Parse the Ensembl GTF into a BiocPy GenomicRanges object.
+
+    This is the Python equivalent of R's ``makeGRangesFromEnsembl()``.
+    Downloads the Ensembl GTF for the organism and parses it using the
+    full GFF parsing engine.
+
+    Parameters
+    ----------
+    organism : str
+        Latin organism name (e.g. ``'Homo sapiens'``, ``'Mus musculus'``).
+    level : str
+        Feature level: ``"genes"``, ``"transcripts"``, or ``"exons"``.
+    genome_build : str or None
+        Ensembl genome build. Auto-detected if ``None``.
+    release : int or None
+        Ensembl release version. Auto-detected if ``None``.
+    ignore_version : bool
+        Whether to strip version suffixes from identifiers.
+    extra_mcols : bool
+        If ``True``, add ``broad_class`` annotations.
+
+    Returns
+    -------
+    GenomicRanges
+        BiocPy GenomicRanges object.
+    """
+    if genome_build is None:
+        genome_build = current_ensembl_genome_build(organism)
+    if release is None:
+        release = current_ensembl_version()
+    url = _ensembl_gtf_url(organism, genome_build, release)
+    path = cache_url(url)
+    return make_granges_from_gff(
+        path,
+        level=level,
+        ignore_version=ignore_version,
+        extra_mcols=extra_mcols,
+    )
+
+
+def make_ensembl_genes(  # noqa: PLR0912
     df: pd.DataFrame,
     organism: str | None = None,
     genome_build: str | None = None,
@@ -712,7 +726,9 @@ def make_ensembl_genes(
             for col in ("description", "gene_synonyms", "ncbi_gene_id"):
                 if col in df.columns:
                     extra = extra.drop(columns=[col], errors="ignore")
-            df = df.merge(extra, left_on=gene_id_col, right_on="gene_id", how="left", suffixes=("", "_ftp"))
+            df = df.merge(
+                extra, left_on=gene_id_col, right_on="gene_id", how="left", suffixes=("", "_ftp")
+            )
             if "gene_id_ftp" in df.columns:
                 df = df.drop(columns=["gene_id_ftp"])
     if "broad_class" not in df.columns and (

@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.11,<1"]
+build-backend = "uv_build"
 
 [project]
 name = "acidgenomes"
@@ -22,11 +22,16 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Typing :: Typed",
 ]
-dependencies = ["pandas", "requests"]
+dependencies = [
+    "biocframe>=0.7",
+    "genomicranges>=0.8",
+    "iranges>=0.7",
+    "pandas",
+    "requests",
+]
 
 [project.optional-dependencies]
 develop = ["pytest", "pytest-cov", "ruff", "uv"]
-extra = ["genomicranges"]
 
 [project.urls]
 Homepage = "https://github.com/acidgenomics/py-acidgenomes"
@@ -35,6 +40,7 @@ Repository = "https://github.com/acidgenomics/py-acidgenomes"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+markers = ["network: marks tests that require network access (deselect with '-m \"not network\"')"]
 
 [tool.ruff]
 indent-width = 4
@@ -60,7 +66,10 @@ select = [
     "N",   # pep8-naming
     "NPY", # NumPy-specific rules,
     "PL",  # pylint
+    "PT",  # flake8-pytest-style
+    "RUF", # Ruff-specific rules
     "SIM", # flake8-simplify
+    "SLOT", # flake8-slots
     "UP",  # pyupgrade
     "W",   # pycodestyle
 ]
@@ -84,6 +93,9 @@ section-order = [
     "local-folder",
 ]
 
+[tool.ruff.lint.mccabe]
+max-complexity = 30
+
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 100
 
@@ -92,10 +104,24 @@ convention = "numpy"
 
 [tool.ruff.lint.pylint]
 allow-magic-value-types = ["bytes", "int", "str"]
-max-args = 10
-
-[tool.setuptools.packages.find]
-where = ["src"]
+max-args = 30
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["D", "E402", "PLC0415"]
+"tests/**" = ["ANN001", "ANN201", "ANN202", "D", "E402", "F841", "N803", "PLC0415", "PLR2004"]
+# Download modules use lazy imports to avoid circular dependencies.
+"src/acidgenomes/download/**" = ["B008", "PLC0415"]
+# GFF __init__ uses importlib for dynamic provider dispatch.
+"src/acidgenomes/gff/__init__.py" = ["PLC0415"]
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit = true
+push = false
+tag = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
