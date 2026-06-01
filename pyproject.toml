@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acidgenomes"
-version = "0.0.2"
+version = "0.1.0"
 description = "Toolkit for downloading and processing genome annotations."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [{ name = "Michael Steinbaugh", email = "mike@steinbaugh.com" }]
 keywords = ["bioinformatics", "genomics", "annotation"]
 classifiers = [
@@ -16,7 +16,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -40,7 +39,7 @@ addopts = "-v --tb=short"
 [tool.ruff]
 indent-width = 4
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.format]
 docstring-code-format = true
