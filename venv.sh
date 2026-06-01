@@ -7,10 +7,6 @@ install_venv() {
         local python_version
         [[ -f '.python-version' ]] || return 1
         IFS= read -r python_version < '.python-version'
-        if [[ -d "${XDG_DATA_HOME:-}/ca-certificates" ]]
-        then
-            python_version='3.11'
-        fi
         uv venv .venv \
             --no-python-downloads \
             --python "$python_version"
