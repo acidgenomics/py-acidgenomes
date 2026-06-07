@@ -31,6 +31,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+docs = ["myst-parser", "numpydoc", "pydata-sphinx-theme", "sphinx"]
 develop = [
     "bumpver",
     "coverage",
