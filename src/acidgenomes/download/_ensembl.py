@@ -50,11 +50,26 @@ def download_ensembl_genome(
     out_dir = _make_output_dir(Path(output_dir), label)
 
     base_ftp = f"https://ftp.ensembl.org/pub/release-{release}"
+    # Genome FASTA: try primary_assembly first (not all organisms have it),
+    # fall back to toplevel (always present). Matches R's downloader behaviour.
+    _genome_url_primary = (
+        f"{base_ftp}/fasta/{slug_lower}/dna/"
+        f"{slug}.{build_clean}.dna.primary_assembly.fa.gz"
+    )
+    _genome_dest_primary = out_dir / "genome" / f"{slug}.{build_clean}.dna.primary_assembly.fa.gz"
+    _genome_url_toplevel = (
+        f"{base_ftp}/fasta/{slug_lower}/dna/{slug}.{build_clean}.dna.toplevel.fa.gz"
+    )
+    _genome_dest_toplevel = out_dir / "genome" / f"{slug}.{build_clean}.dna.toplevel.fa.gz"
+
     files = {
-        "genome": (
-            f"{base_ftp}/fasta/{slug_lower}/dna/"
-            f"{slug}.{build_clean}.dna.primary_assembly.fa.gz",
-            out_dir / "genome" / f"{slug}.{build_clean}.dna.primary_assembly.fa.gz",
+        "genome_primary_assembly": (
+            _genome_url_primary,
+            _genome_dest_primary,
+        ),
+        "genome_toplevel": (
+            _genome_url_toplevel,
+            _genome_dest_toplevel,
         ),
         "transcriptome": (
             f"{base_ftp}/fasta/{slug_lower}/cdna/"
@@ -72,7 +87,20 @@ def download_ensembl_genome(
     }
 
     result: dict[str, Path] = {}
+    # Handle genome with primary_assembly → toplevel fallback
+    if not (cache and _genome_dest_primary.exists()):
+        import requests
+
+        try:
+            result["genome"] = _download_file(_genome_url_primary, _genome_dest_primary)
+        except requests.HTTPError:
+            result["genome"] = _download_file(_genome_url_toplevel, _genome_dest_toplevel)
+    else:
+        result["genome"] = _genome_dest_primary
+
     for key, (url, dest) in files.items():
+        if key.startswith("genome_"):
+            continue  # handled above
         if cache and dest.exists():
             result[key] = dest
             continue

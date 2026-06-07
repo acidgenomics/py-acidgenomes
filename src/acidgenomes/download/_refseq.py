@@ -1,6 +1,5 @@
 """Download RefSeq genome files."""
 
-import contextlib
 from pathlib import Path
 
 from acidgenomes.download._common import _download_file, _make_output_dir, _slugify
@@ -96,12 +95,19 @@ def download_refseq_genome(
         ),
     }
 
+    import requests
+
     result: dict[str, Path] = {}
     for key, (url, dest) in files.items():
         if cache and dest.exists():
             result[key] = dest
             continue
-        with contextlib.suppress(Exception):
+        # Suppress only HTTP 404 (file absent for this organism); propagate real errors.
+        try:
             result[key] = _download_file(url, dest)
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code == 404:
+                continue
+            raise
 
     return result

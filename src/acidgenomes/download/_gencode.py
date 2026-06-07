@@ -53,7 +53,9 @@ def download_gencode_genome(
 
     gtf_name = f"gencode.v{release_prefix}.annotation.gtf.gz"
     gff3_name = f"gencode.v{release_prefix}.annotation.gff3.gz"
-    genome_name = f"GRC{'m38' if is_mouse else 'h38'}.primary_assembly.genome.fa.gz"
+    # Use the detected/provided genome_build (not a hardcoded version).
+    # e.g. GRCm39 for modern mouse, GRCh38 for human.
+    genome_name = f"{genome_build}.primary_assembly.genome.fa.gz"
     tx_name = f"gencode.v{release_prefix}.transcripts.fa.gz"
 
     label = f"{_slugify(organism)}-{genome_build}-gencode-{release_prefix}"
