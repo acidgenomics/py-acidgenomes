@@ -31,7 +31,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-develop = ["pytest", "pytest-cov", "ruff", "uv"]
+develop = [
+    "bumpver",
+    "coverage",
+    "interrogate",
+    "pyright[nodejs]",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "ty",
+    "uv",
+]
 
 [project.urls]
 Homepage = "https://github.com/acidgenomics/py-acidgenomes"
@@ -113,15 +123,55 @@ max-args = 30
 # GFF __init__ uses importlib for dynamic provider dispatch.
 "src/acidgenomes/gff/__init__.py" = ["PLC0415"]
 
+[tool.coverage.run]
+relative_files = true
+source = ["src/acidgenomes"]
+
+[tool.interrogate]
+fail-under = 80
+ignore-init-method = true
+ignore-init-module = true
+ignore-property-decorators = false
+ignore-setters = false
+verbose = 2
+
+[tool.numpydoc_validation]
+checks = [
+    "all",  # report on all checks, except
+    "GL01", # do not require docstring formatting that conflicts with ruff
+    "GL02", # ...
+    "GL03", # ...
+    "GL08", # nor require __init__ docstrings (params documented in class docstring)
+    "ES01", # nor require an extended summary
+    "EX01", # nor examples
+    "PR02", # nor require parameter docs for dataclasses (fields are self-documenting)
+    "SA01", # nor a see also section
+    "SS06", # nor require the summary to fit on one line
+]
+override_SS05 = ['^Access ', '^Assess ', '^Process ']
+
+[tool.pyright]
+pythonVersion = "3.12"
+verboseOutput = true
+
 [tool.ty.environment]
 python-version = "3.12"
 
+[tool.ty.src]
+exclude = [".venv", "**/__pycache__", "**/.*"]
+
+[tool.ty.terminal]
+error-on-warning = true
+
 [tool.bumpver]
-current_version = "0.1.0"
-version_pattern = "MAJOR.MINOR.PATCH"
 commit = true
+commit_message = "Bump to {new_version}."
+current_version = "v0.1.0"
 push = false
 tag = false
+tag_message = "{new_version}"
+tag_scope = "default"
+version_pattern = "vMAJOR.MINOR.PATCH"
 
 [tool.bumpver.file_patterns]
-"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{pep440_version}"']
