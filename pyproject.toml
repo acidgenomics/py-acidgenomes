@@ -7,7 +7,8 @@ name = "acidgenomes"
 version = "0.1.0"
 description = "Toolkit for downloading and processing genome annotations."
 readme = "README.md"
-license = "AGPL-3.0-or-later"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 authors = [{ name = "Michael Steinbaugh", email = "mike@steinbaugh.com" }]
 keywords = ["bioinformatics", "genomics", "annotation"]
@@ -47,10 +48,12 @@ develop = [
 [project.urls]
 Homepage = "https://github.com/acidgenomics/py-acidgenomes"
 Repository = "https://github.com/acidgenomics/py-acidgenomes"
+Changelog = "https://github.com/acidgenomics/py-acidgenomes/blob/main/CHANGELOG.md"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+pythonpath = ["src"]
 markers = ["network: marks tests that require network access (deselect with '-m \"not network\"')"]
 
 [tool.ruff]
@@ -154,12 +157,16 @@ override_SS05 = ['^Access ', '^Assess ', '^Process ']
 [tool.pyright]
 pythonVersion = "3.12"
 verboseOutput = true
+venvPath = "."
+venv = ".venv"
+exclude = ["tests", ".venv"]
 
 [tool.ty.environment]
 python-version = "3.12"
+python = ".venv"
 
 [tool.ty.src]
-exclude = [".venv", "**/__pycache__", "**/.*"]
+exclude = [".venv", "**/__pycache__", "**/.*", "tests"]
 
 [tool.ty.terminal]
 error-on-warning = true

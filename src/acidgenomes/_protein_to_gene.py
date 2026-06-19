@@ -49,11 +49,13 @@ def make_protein_to_gene_from_ensembl(
                 continue
             gene_id = info.get("Parent") or info.get("parent")
             gene_name = info.get("display_name") or info.get("gene_name") or gene_id
-            records.append({
-                "protein_id": protein_id,
-                "gene_id": gene_id,
-                "gene_name": gene_name,
-            })
+            records.append(
+                {
+                    "protein_id": protein_id,
+                    "gene_id": gene_id,
+                    "gene_name": gene_name,
+                }
+            )
 
     df = pd.DataFrame(records, columns=["protein_id", "gene_id", "gene_name"])
     return ProteinToGene(data=df)

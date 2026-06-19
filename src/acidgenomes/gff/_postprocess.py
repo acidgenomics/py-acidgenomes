@@ -16,17 +16,19 @@ _REMOVE_BIOTYPES_NON_GENCODE = frozenset({"artifact", "TEC"})
 _NONCODING_BIOTYPES = frozenset({"known_ncrna", "lincRNA", "lncRNA", "non_coding"})
 
 # Biotypes classified as small RNA.
-_SMALL_RNA_BIOTYPES = frozenset({
-    "miRNA",
-    "misc_RNA",
-    "ribozyme",
-    "rRNA",
-    "scaRNA",
-    "scRNA",
-    "snoRNA",
-    "snRNA",
-    "sRNA",
-})
+_SMALL_RNA_BIOTYPES = frozenset(
+    {
+        "miRNA",
+        "misc_RNA",
+        "ribozyme",
+        "rRNA",
+        "scaRNA",
+        "scRNA",
+        "snoRNA",
+        "snRNA",
+        "sRNA",
+    }
+)
 
 # Biotypes classified as NMD/NSD decaying transcripts.
 _DECAYING_BIOTYPES = frozenset({"non_stop_decay", "nonsense_mediated_decay"})
@@ -86,8 +88,7 @@ def add_broad_class(df: pd.DataFrame) -> pd.DataFrame:
     gene_names = df["gene_name"] if "gene_name" in df.columns else pd.Series([None] * len(df))
 
     broad = [
-        _broad_class_row(b, s, g)
-        for b, s, g in zip(biotypes, seqnames, gene_names, strict=False)
+        _broad_class_row(b, s, g) for b, s, g in zip(biotypes, seqnames, gene_names, strict=False)
     ]
     result = df.copy()
     result["broad_class"] = pd.Categorical(broad)
@@ -114,8 +115,8 @@ def remove_unwanted_biotypes(df: pd.DataFrame, *, provider: str) -> pd.DataFrame
     to_remove = set(_REMOVE_BIOTYPES_DEFAULT)
     if provider != "GENCODE":
         to_remove |= _REMOVE_BIOTYPES_NON_GENCODE
-    mask = df["gene_biotype"].isin(to_remove)
-    return df[~mask].reset_index(drop=True)
+    mask = df["gene_biotype"].isin(list(to_remove))
+    return pd.DataFrame(df[~mask]).reset_index(drop=True)
 
 
 def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:

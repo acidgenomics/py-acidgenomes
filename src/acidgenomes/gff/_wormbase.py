@@ -26,7 +26,7 @@ def _validate_gene_ids(df: pd.DataFrame, level: str) -> pd.DataFrame:
             f"Dropping {n_dropped} {level} entries with malformed WormBase gene_id.",
             stacklevel=3,
         )
-    return df[valid].reset_index(drop=True)
+    return pd.DataFrame(df[valid]).reset_index(drop=True)
 
 
 def extract_genes(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
@@ -44,7 +44,7 @@ def extract_genes(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     pd.DataFrame
         Gene-level rows with validated WBGene IDs.
     """
-    genes = df[df["type"] == "gene"].copy()
+    genes = pd.DataFrame(df[df["type"] == "gene"]).copy()
     if genes.empty:
         msg = "No gene features found in WormBase GTF."
         raise ValueError(msg)
@@ -70,7 +70,7 @@ def extract_transcripts(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     genes = extract_genes(df, gff_format)
     gene_cols_prefix = [c for c in genes.columns if c.startswith("gene_")]
 
-    txs = df[df["type"] == "transcript"].copy()
+    txs = pd.DataFrame(df[df["type"] == "transcript"]).copy()
     if txs.empty:
         msg = "No transcript features found in WormBase GTF."
         raise ValueError(msg)
@@ -98,7 +98,7 @@ def extract_exons(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     pd.DataFrame
         Exon-level rows with validated WBGene IDs.
     """
-    exons = df[df["type"] == "exon"].copy()
+    exons = pd.DataFrame(df[df["type"] == "exon"]).copy()
     if exons.empty:
         msg = "No exon features found in WormBase GTF."
         raise ValueError(msg)

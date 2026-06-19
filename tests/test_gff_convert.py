@@ -8,14 +8,16 @@ from acidgenomes.gff._convert import dataframe_to_granges
 
 
 def _make_gene_df() -> pd.DataFrame:
-    return pd.DataFrame({
-        "seqnames": ["1", "1", "MT"],
-        "start": [65419, 450703, 3307],
-        "end": [71585, 451697, 4262],
-        "strand": ["+", "-", "+"],
-        "gene_id": ["ENSG00000186092", "ENSG00000284733", "ENSG00000198888"],
-        "gene_name": ["OR4F5", "OR4F29", "MT-ND1"],
-    })
+    return pd.DataFrame(
+        {
+            "seqnames": ["1", "1", "MT"],
+            "start": [65419, 450703, 3307],
+            "end": [71585, 451697, 4262],
+            "strand": ["+", "-", "+"],
+            "gene_id": ["ENSG00000186092", "ENSG00000284733", "ENSG00000198888"],
+            "gene_name": ["OR4F5", "OR4F29", "MT-ND1"],
+        }
+    )
 
 
 def test_returns_genomic_ranges():

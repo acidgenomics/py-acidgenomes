@@ -239,7 +239,7 @@ def make_ncbi_gene_history(organism: str) -> NcbiGeneHistory:
     df = _rename_columns(df)
     tax_col = _find_tax_column(df)
     df[tax_col] = pd.to_numeric(df[tax_col], errors="coerce")
-    df = df[df[tax_col] == tax_id].copy()
+    df = pd.DataFrame(df[df[tax_col] == tax_id]).copy()
     df = df.drop(columns=[tax_col], errors="ignore")
     df = _rename_columns(df)
     _coerce_date_columns(df)
@@ -260,7 +260,7 @@ def _find_tax_column(df: pd.DataFrame) -> str:
             return c_snake
         if candidate in df.columns:
             return candidate
-    return df.columns[0]
+    return str(df.columns[0])
 
 
 def _coerce_date_columns(df: pd.DataFrame) -> None:
@@ -343,8 +343,8 @@ def _merge_jax_species(df: pd.DataFrame) -> pd.DataFrame:
             break
     if tax_col is None:
         raise RuntimeError("No taxonomy column found in JAX data.")
-    hs = df[df[tax_col] == 9606].copy()
-    mm = df[df[tax_col] == 10090].copy()
+    hs = pd.DataFrame(df[df[tax_col] == 9606]).copy()
+    mm = pd.DataFrame(df[df[tax_col] == 10090]).copy()
     hs_renames = {
         "ncbi_gene_id": "human_ncbi_gene_id",
         "gene_name": "human_gene_name",
@@ -383,29 +383,35 @@ def _find_merge_column(hs: pd.DataFrame, mm: pd.DataFrame) -> str:
 # -------------------------------------------------------------------------
 
 
-_NONCODING_BIOTYPES = frozenset({
-    "known_ncrna",
-    "lincRNA",
-    "lncRNA",
-    "non_coding",
-})
+_NONCODING_BIOTYPES = frozenset(
+    {
+        "known_ncrna",
+        "lincRNA",
+        "lncRNA",
+        "non_coding",
+    }
+)
 
-_SMALL_BIOTYPES = frozenset({
-    "miRNA",
-    "misc_RNA",
-    "ribozyme",
-    "rRNA",
-    "scaRNA",
-    "scRNA",
-    "snoRNA",
-    "snRNA",
-    "sRNA",
-})
+_SMALL_BIOTYPES = frozenset(
+    {
+        "miRNA",
+        "misc_RNA",
+        "ribozyme",
+        "rRNA",
+        "scaRNA",
+        "scRNA",
+        "snoRNA",
+        "snRNA",
+        "sRNA",
+    }
+)
 
-_DECAYING_BIOTYPES = frozenset({
-    "non_stop_decay",
-    "nonsense_mediated_decay",
-})
+_DECAYING_BIOTYPES = frozenset(
+    {
+        "non_stop_decay",
+        "nonsense_mediated_decay",
+    }
+)
 
 
 def _apply_broad_class(  # noqa: PLR0911
@@ -496,7 +502,11 @@ def _ensembl_ftp_gene_metadata(
     try:
         gene_path = cache_url(gene_url)
         gene = pd.read_csv(
-            gene_path, sep="\t", header=None, na_values=["\\N"], quoting=3,
+            gene_path,
+            sep="\t",
+            header=None,
+            na_values=["\\N"],
+            quoting=3,
         )
     except Exception:
         logger.warning("Failed to download gene metadata: %s", gene_url)
@@ -517,7 +527,11 @@ def _ensembl_ftp_gene_metadata(
     try:
         syn_path = cache_url(syn_url)
         synonym = pd.read_csv(
-            syn_path, sep="\t", header=None, na_values=["\\N"], quoting=3,
+            syn_path,
+            sep="\t",
+            header=None,
+            na_values=["\\N"],
+            quoting=3,
         )
     except Exception:
         logger.warning("Failed to download synonyms: %s", syn_url)
@@ -538,13 +552,16 @@ def _ensembl_ftp_gene_metadata(
     try:
         entrez_path = cache_url(entrez_url)
         entrez = pd.read_csv(
-            entrez_path, sep="\t", na_values=["\\N"], quoting=3,
+            entrez_path,
+            sep="\t",
+            na_values=["\\N"],
+            quoting=3,
         )
     except Exception:
         logger.warning("Failed to download Entrez mapping: %s", entrez_url)
         return None
-    entrez = entrez[["gene_stable_id", "xref"]].dropna().drop_duplicates()
-    entrez = entrez[entrez["xref"].astype(str).str.fullmatch(r"\d+")]
+    entrez = pd.DataFrame(entrez[["gene_stable_id", "xref"]].dropna().drop_duplicates())
+    entrez = pd.DataFrame(entrez[pd.Series(entrez["xref"]).astype(str).str.fullmatch(r"\d+")])
     entrez["xref"] = entrez["xref"].astype(int)
     df_entrez = (
         entrez.groupby("gene_stable_id")["xref"]
@@ -775,9 +792,9 @@ def make_ensembl_to_ncbi(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].dropna().drop_duplicates()
-    df = df[~df["ensembl_gene_id"].duplicated(keep="first")]
-    df = df[~df["ncbi_gene_id"].duplicated(keep="first")]
+    df = pd.DataFrame(df[cols].dropna().drop_duplicates())
+    df = pd.DataFrame(df[~df["ensembl_gene_id"].duplicated(keep="first")])
+    df = pd.DataFrame(df[~df["ncbi_gene_id"].duplicated(keep="first")])
     df = df.sort_values(cols).reset_index(drop=True)
     if organism is None:
         organism = detect_organism(df["ensembl_gene_id"].tolist())
@@ -809,9 +826,9 @@ def make_ncbi_to_ensembl(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].dropna().drop_duplicates()
-    df = df[~df["ncbi_gene_id"].duplicated(keep="first")]
-    df = df[~df["ensembl_gene_id"].duplicated(keep="first")]
+    df = pd.DataFrame(df[cols].dropna().drop_duplicates())
+    df = pd.DataFrame(df[~df["ncbi_gene_id"].duplicated(keep="first")])
+    df = pd.DataFrame(df[~df["ensembl_gene_id"].duplicated(keep="first")])
     df = df.sort_values(cols).reset_index(drop=True)
     if organism is None:
         organism = detect_organism(df["ensembl_gene_id"].tolist())
@@ -853,10 +870,10 @@ def make_gene_to_symbol(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].copy()
+    df = pd.DataFrame(df[cols]).copy()
     df = df.drop_duplicates()
     df = _drop_incomplete_symbols(df, quiet=quiet)
-    if df["gene_id"].duplicated().any():
+    if bool(df["gene_id"].duplicated().any()):
         df = df.drop_duplicates(subset=["gene_id"], keep="first")
     df = df.sort_values(cols).reset_index(drop=True)
     df = _apply_symbol_format(df, format=format)
@@ -871,7 +888,7 @@ def make_gene_to_symbol(
 def _drop_incomplete_symbols(df: pd.DataFrame, *, quiet: bool = False) -> pd.DataFrame:
     """Drop rows with missing gene_name values."""
     complete = df["gene_name"].notna()
-    if complete.all():
+    if bool(complete.all()):
         return df
     n_drop = (~complete).sum()
     if not quiet:
@@ -879,7 +896,7 @@ def _drop_incomplete_symbols(df: pd.DataFrame, *, quiet: bool = False) -> pd.Dat
             "Dropping %d identifier(s) without defined gene symbol.",
             n_drop,
         )
-    return df[complete].copy()
+    return pd.DataFrame(df[complete]).copy()
 
 
 def _apply_symbol_format(df: pd.DataFrame, *, format: str) -> pd.DataFrame:
@@ -943,18 +960,18 @@ def make_tx_to_gene(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].copy()
+    df = pd.DataFrame(df[cols]).copy()
     df = df.drop_duplicates()
     complete = df.notna().all(axis=1)
-    if not complete.all():
+    if not bool(complete.all()):
         n_drop = (~complete).sum()
         if not quiet:
             logger.warning(
                 "Dropping %d element(s) without transcript-to-gene mapping.",
                 n_drop,
             )
-        df = df[complete].copy()
-    if df["tx_id"].duplicated().any():
+        df = pd.DataFrame(df[complete]).copy()
+    if bool(df["tx_id"].duplicated().any()):
         df = df.drop_duplicates(subset=["tx_id"], keep="first")
     df = df.sort_values(cols).reset_index(drop=True)
     meta: dict[str, Any] = {

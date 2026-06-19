@@ -110,9 +110,7 @@ def _detect_genome_build_from_directives(
     return None
 
 
-def _extract_metadata_from_filename(
-    path: Path, provider: Provider
-) -> dict:
+def _extract_metadata_from_filename(path: Path, provider: Provider) -> dict:
     """Extract organism, genome_build, release from filename.
 
     Returns a partial dict with whatever can be determined.
@@ -182,9 +180,8 @@ def get_gff_metadata(path: Path) -> GffMetadata:
     format_from_directive = directives.get("format", "").upper()
     if format_from_directive == "GTF":
         gff_format = GffFormat.GTF
-    elif (
-        format_from_directive == "GFF3"
-        and (directives.get("provider", "") != "GENCODE" or gff_format == GffFormat.GFF3)
+    elif format_from_directive == "GFF3" and (
+        directives.get("provider", "") != "GENCODE" or gff_format == GffFormat.GFF3
     ):
         # Only trust if it's not the known GENCODE GRCh37 bug.
         gff_format = GffFormat.GFF3

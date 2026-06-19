@@ -80,7 +80,7 @@ def _match_nested(
         if col not in df.columns:
             continue
         for idx, val in df[col].items():
-            if pd.isna(val):
+            if bool(pd.isna(val)):
                 continue
             val_str = str(val)
             if val_str == query:
