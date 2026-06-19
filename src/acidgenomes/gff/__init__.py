@@ -45,8 +45,16 @@ _LEVEL_TO_NAMES_COL = {
 _LEVEL_FEATURE_FILTER: dict[str, set[str]] = {
     "genes": {"gene", "region"},
     "transcripts": {
-        "gene", "transcript", "mRNA", "pseudogene",
-        "ncRNA", "rRNA", "tRNA", "snRNA", "snoRNA", "miRNA",
+        "gene",
+        "transcript",
+        "mRNA",
+        "pseudogene",
+        "ncRNA",
+        "rRNA",
+        "tRNA",
+        "snRNA",
+        "snoRNA",
+        "miRNA",
     },
     "exons": {"gene", "transcript", "mRNA", "exon", "pseudogene", "ncRNA", "rRNA", "tRNA"},
 }

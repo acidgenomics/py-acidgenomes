@@ -33,7 +33,7 @@ def extract_genes(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     pd.DataFrame
         Gene-level rows.
     """
-    genes = df[df["type"] == "gene"].copy()
+    genes = pd.DataFrame(df[df["type"] == "gene"]).copy()
     if genes.empty:
         msg = "No gene features found in FlyBase GTF."
         raise ValueError(msg)
@@ -59,7 +59,7 @@ def extract_transcripts(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
         msg = "FlyBase GTF missing 'type' column."
         raise ValueError(msg)
     keep = df["type"].apply(_is_transcript_type)
-    txs = df[keep].copy()
+    txs = pd.DataFrame(df[keep]).copy()
     if txs.empty:
         msg = "No transcript features found in FlyBase GTF."
         raise ValueError(msg)
@@ -81,7 +81,7 @@ def extract_exons(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     pd.DataFrame
         Exon-level rows.
     """
-    exons = df[df["type"] == "exon"].copy()
+    exons = pd.DataFrame(df[df["type"] == "exon"]).copy()
     if exons.empty:
         msg = "No exon features found in FlyBase GTF."
         raise ValueError(msg)

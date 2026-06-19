@@ -87,9 +87,7 @@ GFF_FILENAME_PATTERNS: dict[Provider, re.Pattern[str]] = {
 
 # Denylist: FlyBase GFF3 and WormBase GFF3 are not supported; use GTF.
 _DENYLIST_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(
-        r"^(?:[a-z0-9]+_)?([^-]+)-([^-]+)-(r[0-9]+\.[0-9]+)\.gff(?:\.gz)?$"
-    ),
+    re.compile(r"^(?:[a-z0-9]+_)?([^-]+)-([^-]+)-(r[0-9]+\.[0-9]+)\.gff(?:\.gz)?$"),
     re.compile(
         r"^(?:[a-z0-9]+_)?([a-z]_[a-z]+)\.([A-Z0-9]+)\.(WS[0-9]+)\.([a-z_]+)\.gff3(?:\.gz)?$"
     ),

@@ -53,8 +53,7 @@ def download_ensembl_genome(
     # Genome FASTA: try primary_assembly first (not all organisms have it),
     # fall back to toplevel (always present). Matches R's downloader behaviour.
     _genome_url_primary = (
-        f"{base_ftp}/fasta/{slug_lower}/dna/"
-        f"{slug}.{build_clean}.dna.primary_assembly.fa.gz"
+        f"{base_ftp}/fasta/{slug_lower}/dna/{slug}.{build_clean}.dna.primary_assembly.fa.gz"
     )
     _genome_dest_primary = out_dir / "genome" / f"{slug}.{build_clean}.dna.primary_assembly.fa.gz"
     _genome_url_toplevel = (
@@ -72,8 +71,7 @@ def download_ensembl_genome(
             _genome_dest_toplevel,
         ),
         "transcriptome": (
-            f"{base_ftp}/fasta/{slug_lower}/cdna/"
-            f"{slug}.{build_clean}.cdna.all.fa.gz",
+            f"{base_ftp}/fasta/{slug_lower}/cdna/{slug}.{build_clean}.cdna.all.fa.gz",
             out_dir / "transcriptome" / f"{slug}.{build_clean}.cdna.all.fa.gz",
         ),
         "gtf": (

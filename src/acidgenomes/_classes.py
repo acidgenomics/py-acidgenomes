@@ -41,7 +41,7 @@ def _check_has_rows(df: pd.DataFrame, cls: str) -> None:
 
 def _check_no_na(df: pd.DataFrame, col: str, cls: str) -> None:
     n = df[col].isna().sum()
-    if n:
+    if bool(n):
         raise ValueError(f"{cls}: {n} NA value(s) in column '{col}'.")
 
 

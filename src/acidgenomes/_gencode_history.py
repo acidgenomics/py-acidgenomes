@@ -41,11 +41,13 @@ def gencode_release_history(organism: str = "Homo sapiens") -> pd.DataFrame:
     )
     records: list[dict] = []
     for m in row_pattern.finditer(html):
-        records.append({
-            "gencode_release": m.group(1).strip(),
-            "genome_build": m.group(2).strip(),
-            "ensembl_release": int(m.group(3).strip()),
-        })
+        records.append(
+            {
+                "gencode_release": m.group(1).strip(),
+                "genome_build": m.group(2).strip(),
+                "ensembl_release": int(m.group(3).strip()),
+            }
+        )
 
     return pd.DataFrame(records)
 

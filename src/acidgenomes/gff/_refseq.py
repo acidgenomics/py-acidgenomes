@@ -30,24 +30,30 @@ def _extract_ncbi_gene_id_from_dbxref(dbxref_value: object) -> int | None:
 
 def _extract_ncbi_gene_ids_from_df_gff3(df: pd.DataFrame) -> pd.DataFrame:
     """Build a mapping of ID → ncbi_gene_id from RefSeq GFF3 gene rows."""
-    gene_rows = df[df["gbkey"] == "Gene"].copy() if "gbkey" in df.columns else pd.DataFrame()
+    gene_rows = (
+        pd.DataFrame(df[df["gbkey"] == "Gene"]).copy() if "gbkey" in df.columns else pd.DataFrame()
+    )
     if gene_rows.empty:
         return pd.DataFrame(columns=["ID", "ncbi_gene_id"])
-    gene_rows = gene_rows[["ID", "Dbxref"]].dropna(subset=["ID"])
+    gene_rows = pd.DataFrame(gene_rows[["ID", "Dbxref"]]).dropna(subset=["ID"])
     gene_rows["ncbi_gene_id"] = gene_rows["Dbxref"].apply(_extract_ncbi_gene_id_from_dbxref)
-    return gene_rows[["ID", "ncbi_gene_id"]].dropna().drop_duplicates(subset=["ID"])
+    return pd.DataFrame(gene_rows[["ID", "ncbi_gene_id"]]).dropna().drop_duplicates(subset=["ID"])
 
 
 def _extract_ncbi_gene_ids_from_df_gtf(df: pd.DataFrame) -> pd.DataFrame:
     """Build a mapping of gene_id → ncbi_gene_id from RefSeq GTF exon rows."""
     if "db_xref" not in df.columns:
         return pd.DataFrame(columns=["gene_id", "ncbi_gene_id"])
-    exon_rows = df[df["type"] == "exon"].copy() if "type" in df.columns else df.copy()
-    keep = exon_rows["db_xref"].str.contains("GeneID:", na=False)
-    exon_rows = exon_rows[keep][["gene_id", "db_xref"]].dropna()
-    ncbi_ids_extracted = exon_rows["db_xref"].str.extract(r"GeneID:(\d+)")
+    exon_rows = pd.DataFrame(df[df["type"] == "exon"]).copy() if "type" in df.columns else df.copy()
+    keep = pd.Series(exon_rows["db_xref"]).str.contains("GeneID:", na=False)
+    exon_rows = pd.DataFrame(pd.DataFrame(exon_rows[keep])[["gene_id", "db_xref"]]).dropna()
+    ncbi_ids_extracted = pd.Series(exon_rows["db_xref"]).str.extract(r"GeneID:(\d+)")
     exon_rows["ncbi_gene_id"] = ncbi_ids_extracted.astype(float).astype("Int64")
-    result = exon_rows[["gene_id", "ncbi_gene_id"]].dropna().drop_duplicates(subset=["gene_id"])
+    result = (
+        pd.DataFrame(exon_rows[["gene_id", "ncbi_gene_id"]])
+        .dropna()
+        .drop_duplicates(subset=["gene_id"])
+    )
     return result
 
 
@@ -114,7 +120,7 @@ def extract_exons(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
 def _genes_gtf(df: pd.DataFrame) -> pd.DataFrame:
     # NCBI gene IDs must be extracted from exon rows before gene filtering.
     ncbi_ids = _extract_ncbi_gene_ids_from_df_gtf(df)
-    genes = df[df["type"] == "gene"].copy()
+    genes = pd.DataFrame(df[df["type"] == "gene"]).copy()
     if genes.empty:
         msg = "No gene features found in RefSeq GTF."
         raise ValueError(msg)
@@ -131,7 +137,7 @@ def _genes_gff3(df: pd.DataFrame) -> pd.DataFrame:
     if "gbkey" not in df.columns:
         msg = "RefSeq GFF3 missing 'gbkey' column."
         raise ValueError(msg)
-    genes = df[df["gbkey"] == "Gene"].copy()
+    genes = pd.DataFrame(df[df["gbkey"] == "Gene"]).copy()
     if genes.empty:
         msg = "No gene features found in RefSeq GFF3."
         raise ValueError(msg)
@@ -140,9 +146,18 @@ def _genes_gff3(df: pd.DataFrame) -> pd.DataFrame:
         genes = genes.merge(ncbi_ids, on="ID", how="left")
     # ID column → parent_gene_id (strip "gene-" prefix), gene column → gene_id.
     genes = genes.rename(columns={"ID": "parent_gene_id", "gene": "gene_id"})
-    genes["parent_gene_id"] = genes["parent_gene_id"].str.replace("^gene-", "", regex=True)
+    genes["parent_gene_id"] = pd.Series(genes["parent_gene_id"]).str.replace(
+        "^gene-", "", regex=True
+    )
     for col in (
-        "Name", "Note", "Parent", "end_range", "experiment", "gbkey", "start_range", "transl_except"
+        "Name",
+        "Note",
+        "Parent",
+        "end_range",
+        "experiment",
+        "gbkey",
+        "start_range",
+        "transl_except",
     ):
         if col in genes.columns:
             genes = genes.drop(columns=[col])
@@ -155,17 +170,17 @@ def _transcripts_gtf(df: pd.DataFrame) -> pd.DataFrame:
         c for c in ("description", "gene_biotype", "ncbi_gene_id") if c in genes.columns
     ]
     gene_meta = (
-        genes[gene_meta_cols]
+        pd.DataFrame(genes[gene_meta_cols])
         .dropna(subset=["parent_gene_id"])
         .drop_duplicates(subset=["parent_gene_id"])
     )
 
-    txs = df[df["type"] == "transcript"].copy()
+    txs = pd.DataFrame(df[df["type"] == "transcript"]).copy()
     if txs.empty:
         msg = "No transcript features found in RefSeq GTF."
         raise ValueError(msg)
-    keep = txs["transcript_id"].str.match(_TRANSCRIPT_ID_PATTERN, na=False)
-    txs = txs[keep]
+    keep = pd.Series(txs["transcript_id"]).str.match(_TRANSCRIPT_ID_PATTERN, na=False)
+    txs = pd.DataFrame(txs[keep])
     txs = txs.rename(columns={"gene_id": "parent_gene_id", "gene": "gene_id"})
     txs = txs.merge(gene_meta, on="parent_gene_id", how="left")
     for col in ("experiment", "gbkey", "note"):
@@ -180,28 +195,37 @@ def _transcripts_gff3(df: pd.DataFrame) -> pd.DataFrame:
         c for c in ("description", "gene_biotype", "ncbi_gene_id") if c in genes.columns
     ]
     gene_meta = (
-        genes[gene_meta_cols]
+        pd.DataFrame(genes[gene_meta_cols])
         .dropna(subset=["parent_gene_id"])
         .drop_duplicates(subset=["parent_gene_id"])
     )
 
     if "transcript_id" in df.columns:
-        txs = df[df["transcript_id"].notna()].copy()
+        txs = pd.DataFrame(df[df["transcript_id"].notna()]).copy()
     else:
         txs = pd.DataFrame()
     if txs.empty:
         msg = "No transcript features found in RefSeq GFF3."
         raise ValueError(msg)
-    keep = txs["transcript_id"].str.match(_TRANSCRIPT_ID_PATTERN, na=False)
-    txs = txs[keep]
+    keep = pd.Series(txs["transcript_id"]).str.match(_TRANSCRIPT_ID_PATTERN, na=False)
+    txs = pd.DataFrame(txs[keep])
     # Extract parent_gene_id from Parent attribute: strip "gene-" prefix.
     if "Parent" in txs.columns:
-        txs["parent_gene_id"] = txs["Parent"].astype(str).str.replace("^gene-", "", regex=True)
+        txs["parent_gene_id"] = (
+            pd.Series(txs["Parent"]).astype(str).str.replace("^gene-", "", regex=True)
+        )
     txs = txs.rename(columns={"gene": "gene_id"})
     txs = txs.merge(gene_meta, on="parent_gene_id", how="left")
     for col in (
-        "ID", "Name", "Note", "Parent",
-        "end_range", "experiment", "gbkey", "start_range", "transl_except",
+        "ID",
+        "Name",
+        "Note",
+        "Parent",
+        "end_range",
+        "experiment",
+        "gbkey",
+        "start_range",
+        "transl_except",
     ):
         if col in txs.columns:
             txs = txs.drop(columns=[col])
@@ -209,16 +233,16 @@ def _transcripts_gff3(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _exons_gff3(df: pd.DataFrame) -> pd.DataFrame:
-    exons = df[df["type"] == "exon"].copy()
+    exons = pd.DataFrame(df[df["type"] == "exon"]).copy()
     if exons.empty:
         msg = "No exon features found in RefSeq GFF3."
         raise ValueError(msg)
     if "transcript_id" in exons.columns:
-        keep = exons["transcript_id"].str.match(_TRANSCRIPT_ID_PATTERN, na=False)
+        keep = pd.Series(exons["transcript_id"]).str.match(_TRANSCRIPT_ID_PATTERN, na=False)
     else:
         keep = pd.Series([False] * len(exons))
-    exons = exons[keep]
-    exons["ncbi_gene_id"] = exons["Dbxref"].apply(_extract_ncbi_gene_id_from_dbxref)
+    exons = pd.DataFrame(exons[keep])
+    exons["ncbi_gene_id"] = pd.Series(exons["Dbxref"]).apply(_extract_ncbi_gene_id_from_dbxref)
     exons = exons.rename(columns={"gene": "gene_id"})
     for col in ("Dbxref", "ID", "Name", "Note", "Parent", "gbkey"):
         if col in exons.columns:
@@ -228,15 +252,15 @@ def _exons_gff3(df: pd.DataFrame) -> pd.DataFrame:
 
 def _exons_gtf(df: pd.DataFrame) -> pd.DataFrame:
     ncbi_ids = _extract_ncbi_gene_ids_from_df_gtf(df)
-    exons = df[df["type"] == "exon"].copy()
+    exons = pd.DataFrame(df[df["type"] == "exon"]).copy()
     if exons.empty:
         msg = "No exon features found in RefSeq GTF."
         raise ValueError(msg)
     if "transcript_id" in exons.columns:
-        keep = exons["transcript_id"].str.match(_TRANSCRIPT_ID_PATTERN, na=False)
+        keep = pd.Series(exons["transcript_id"]).str.match(_TRANSCRIPT_ID_PATTERN, na=False)
     else:
         keep = pd.Series([False] * len(exons))
-    exons = exons[keep]
+    exons = pd.DataFrame(exons[keep])
     if not ncbi_ids.empty:
         exons = exons.merge(ncbi_ids, on="gene_id", how="left")
     exons = exons.rename(columns={"gene_id": "parent_gene_id", "gene": "gene_id"})

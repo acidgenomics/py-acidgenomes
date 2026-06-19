@@ -77,12 +77,14 @@ def go_terms_per_gene_name(
             data = fetch_json(url)
             if isinstance(data, list):
                 for item in data:
-                    records.append({
-                        "gene_name": gene_name,
-                        "go_id": item.get("primary_id"),
-                        "go_aspect": item.get("info_type"),
-                        "go_term": item.get("description"),
-                    })
+                    records.append(
+                        {
+                            "gene_name": gene_name,
+                            "go_id": item.get("primary_id"),
+                            "go_aspect": item.get("info_type"),
+                            "go_term": item.get("description"),
+                        }
+                    )
         except Exception:
             continue
 

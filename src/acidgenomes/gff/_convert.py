@@ -59,7 +59,15 @@ def dataframe_to_granges(
 
     # All columns except the genomic coordinate columns become mcols.
     coord_cols = {
-        "seqnames", "start", "end", "strand", "score", "frame", "source", "type", "format"
+        "seqnames",
+        "start",
+        "end",
+        "strand",
+        "score",
+        "frame",
+        "source",
+        "type",
+        "format",
     }
     mcol_names = [c for c in df.columns if c not in coord_cols]
     mcols: dict[str, list] = {}

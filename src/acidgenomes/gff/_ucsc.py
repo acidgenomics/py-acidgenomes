@@ -29,10 +29,14 @@ def extract_genes(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     # UCSC GTF files typically lack explicit "gene" feature rows.
     # Derive gene-level information from transcript rows deduplicated by gene_id.
     if "type" in df.columns and "gene" in df["type"].values:
-        genes = df[df["type"] == "gene"].copy()
+        genes = pd.DataFrame(df[df["type"] == "gene"]).copy()
     else:
         # Collapse transcripts to gene level.
-        txs = df[df["type"] == "transcript"].copy() if "type" in df.columns else df.copy()
+        txs = (
+            pd.DataFrame(df[df["type"] == "transcript"]).copy()
+            if "type" in df.columns
+            else df.copy()
+        )
         if "gene_id" not in txs.columns:
             msg = "UCSC GTF missing 'gene_id' column."
             raise ValueError(msg)
@@ -61,7 +65,7 @@ def extract_transcripts(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     if "type" not in df.columns:
         msg = "UCSC GTF missing 'type' column."
         raise ValueError(msg)
-    txs = df[df["type"] == "transcript"].copy()
+    txs = pd.DataFrame(df[df["type"] == "transcript"]).copy()
     if txs.empty:
         msg = "No transcript features found in UCSC GTF."
         raise ValueError(msg)
@@ -83,7 +87,7 @@ def extract_exons(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
     pd.DataFrame
         Exon-level rows.
     """
-    exons = df[df["type"] == "exon"].copy()
+    exons = pd.DataFrame(df[df["type"] == "exon"]).copy()
     if exons.empty:
         msg = "No exon features found in UCSC GTF."
         raise ValueError(msg)

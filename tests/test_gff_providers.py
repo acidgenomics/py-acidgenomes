@@ -84,14 +84,16 @@ def test_wormbase_gene_id_validation():
 
     from acidgenomes.gff._wormbase import extract_genes
 
-    bad_df = pd.DataFrame({
-        "type": ["gene", "gene"],
-        "gene_id": ["WBGene00000001", "BADID12345"],
-        "seqnames": ["I", "I"],
-        "start": [1, 100],
-        "end": [50, 200],
-        "strand": ["+", "+"],
-    })
+    bad_df = pd.DataFrame(
+        {
+            "type": ["gene", "gene"],
+            "gene_id": ["WBGene00000001", "BADID12345"],
+            "seqnames": ["I", "I"],
+            "start": [1, 100],
+            "end": [50, 200],
+            "strand": ["+", "+"],
+        }
+    )
     import warnings
 
     with warnings.catch_warnings(record=True) as w:

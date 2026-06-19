@@ -68,7 +68,7 @@ def extract_exons(df: pd.DataFrame, gff_format: str) -> pd.DataFrame:
 
 
 def _genes_gtf(df: pd.DataFrame) -> pd.DataFrame:
-    genes = df[df["type"] == "gene"].copy()
+    genes = pd.DataFrame(df[df["type"] == "gene"]).copy()
     if genes.empty:
         msg = "No gene features found in Ensembl GTF."
         raise ValueError(msg)
@@ -84,9 +84,9 @@ def _genes_gtf(df: pd.DataFrame) -> pd.DataFrame:
 def _genes_gff3(df: pd.DataFrame) -> pd.DataFrame:
     # Ensembl GFF3: gene rows have a non-NA gene_id attribute.
     if "gene_id" in df.columns:
-        genes = df[df["gene_id"].notna()].copy()
+        genes = pd.DataFrame(df[df["gene_id"].notna()]).copy()
     else:
-        genes = df[df["type"] == "gene"].copy()
+        genes = pd.DataFrame(df[df["type"] == "gene"]).copy()
     if genes.empty:
         msg = "No gene features found in Ensembl GFF3."
         raise ValueError(msg)
@@ -109,7 +109,7 @@ def _genes_gff3(df: pd.DataFrame) -> pd.DataFrame:
 
 def _transcripts_gtf(df: pd.DataFrame) -> pd.DataFrame:
     genes = _genes_gtf(df)
-    txs = df[df["type"] == "transcript"].copy()
+    txs = pd.DataFrame(df[df["type"] == "transcript"]).copy()
     if txs.empty:
         msg = "No transcript features found in Ensembl GTF."
         raise ValueError(msg)
@@ -131,7 +131,7 @@ def _transcripts_gtf(df: pd.DataFrame) -> pd.DataFrame:
 def _transcripts_gff3(df: pd.DataFrame) -> pd.DataFrame:
     genes = _genes_gff3(df)
     if "transcript_id" in df.columns:
-        txs = df[df["transcript_id"].notna()].copy()
+        txs = pd.DataFrame(df[df["transcript_id"].notna()]).copy()
     else:
         txs = pd.DataFrame()
     if txs.empty:
@@ -159,7 +159,7 @@ def _transcripts_gff3(df: pd.DataFrame) -> pd.DataFrame:
 
 def _exons_gtf(df: pd.DataFrame) -> pd.DataFrame:
     txs = _transcripts_gtf(df)
-    exons = df[df["type"] == "exon"].copy()
+    exons = pd.DataFrame(df[df["type"] == "exon"]).copy()
     if exons.empty:
         msg = "No exon features found in Ensembl GTF."
         raise ValueError(msg)
@@ -180,7 +180,11 @@ def _exons_gtf(df: pd.DataFrame) -> pd.DataFrame:
 
 def _exons_gff3(df: pd.DataFrame) -> pd.DataFrame:
     txs = _transcripts_gff3(df)
-    exons = df[df["exon_id"].notna()].copy() if "exon_id" in df.columns else pd.DataFrame()
+    exons = (
+        pd.DataFrame(df[df["exon_id"].notna()]).copy()
+        if "exon_id" in df.columns
+        else pd.DataFrame()
+    )
     if exons.empty:
         msg = "No exon features found in Ensembl GFF3."
         raise ValueError(msg)
