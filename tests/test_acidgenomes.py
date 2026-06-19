@@ -35,11 +35,11 @@ class TestDetectOrganism:
         assert detect_organism(ids) == "Homo sapiens"
 
     def test_detect_organism_empty_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="must not be empty"):
             detect_organism([])
 
     def test_detect_organism_mixed_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Multiple organisms"):
             detect_organism(["ENSG00000000003", "ENSMUSG00000000001"])
 
 
