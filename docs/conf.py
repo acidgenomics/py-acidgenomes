@@ -18,6 +18,7 @@ autodoc_default_options = {
 }
 napoleon_numpy_docstring = True
 napoleon_google_docstring = False
+numpydoc_show_class_members = False
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
     "github_url": "https://github.com/acidgenomics/py-acidgenomes",

@@ -70,9 +70,9 @@ def make_hgnc() -> Hgnc:
     -------
     Hgnc
 
-    See Also
-    --------
-    https://www.genenames.org/download/statistics-and-files/
+    Notes
+    -----
+    See https://www.genenames.org/download/statistics-and-files/.
     """
     logger.info("Importing HGNC complete set.")
     url = "https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt"
@@ -121,9 +121,9 @@ def make_mgi() -> Mgi:
     -------
     Mgi
 
-    See Also
-    --------
-    https://www.informatics.jax.org/
+    Notes
+    -----
+    See https://www.informatics.jax.org/.
     """
     logger.info("Importing MGI metadata.")
     url = "https://www.informatics.jax.org/downloads/reports/MGI_Gene_Model_Coord.rpt"
