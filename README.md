@@ -4,18 +4,26 @@ Toolkit for downloading and processing genome annotations.
 
 ## Installation
 
-This is a [Python][] package.
+This is a [Python][] package hosted at [python.acidgenomics.com][].
 We recommend using [uv][] to install.
 
 ```sh
-uv venv './.venv'
-source './.venv/bin/activate'
-uv pip install 'git+https://github.com/acidgenomics/py-acidgenomes'
-python3
+uv pip install \
+    --index-url 'https://python.acidgenomics.com/simple/' \
+    acidgenomes
 ```
 
-```python
-import acidgenomes
+Or add the index to your project's `pyproject.toml`:
+
+```toml
+[[tool.uv.index]]
+url = "https://python.acidgenomics.com/simple/"
+```
+
+Then install:
+
+```sh
+uv add acidgenomes
 ```
 
 ## Quick start
@@ -68,4 +76,10 @@ ag.update_gene_symbols(["ZCCHC11"], organism="Homo sapiens")
 ```
 
 [python]: https://www.python.org/
+[python.acidgenomics.com]: https://python.acidgenomics.com
 [uv]: https://docs.astral.sh/uv/
+
+
+## License
+
+Apache-2.0 — Copyright 2026 Acid Genomics LLC — see [LICENSE](LICENSE).

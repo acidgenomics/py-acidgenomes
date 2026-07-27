@@ -107,7 +107,7 @@ def map_gene_names_to_ncbi(
     df = ncbi.data.copy()
     if "gene_name" not in df.columns:
         raise ValueError("NCBI data missing 'gene_name' column.")
-    id_col = "gene_id" if "gene_id" in df.columns else df.columns[0]
+    id_col = "gene_id" if "gene_id" in df.columns else str(df.columns[0])
     lookup = _build_name_lookup(df, id_col, ignore_case)
     if "gene_synonyms" in df.columns:
         _extend_lookup_from_pipe_col(lookup, df, "gene_synonyms", id_col, ignore_case)
@@ -200,7 +200,7 @@ def _map_genes_to_ensembl_via_ncbi(
     ncbi_df = ncbi.data
     if "db_xrefs" not in ncbi_df.columns:
         raise ValueError("NCBI data missing 'db_xrefs' column needed for Ensembl mapping.")
-    id_col = "gene_id" if "gene_id" in ncbi_df.columns else ncbi_df.columns[0]
+    id_col = "gene_id" if "gene_id" in ncbi_df.columns else str(ncbi_df.columns[0])
     ens_map = _build_ensembl_xref_map(ncbi_df, id_col)
     ncbi_ids = map_gene_names_to_ncbi(
         genes,
@@ -229,7 +229,7 @@ def _build_ensembl_xref_map(df: pd.DataFrame, id_col: str) -> dict[int, str]:
         xrefs = str(row.get("db_xrefs", ""))
         for ref in xrefs.split("|"):
             if ref.startswith("Ensembl:"):
-                ens_map[int(row[id_col])] = ref.replace("Ensembl:", "")
+                ens_map[int(str(row[id_col]))] = ref.replace("Ensembl:", "")
                 break
     return ens_map
 
@@ -450,11 +450,11 @@ def _build_name_lookup(
     for _, row in df.iterrows():
         name = row.get("gene_name")
         gid = row.get(id_col)
-        if pd.isna(name) or pd.isna(gid):
+        if gid is None or bool(pd.isna(name)) or bool(pd.isna(gid)):
             continue
         key = str(name).upper() if ignore_case else str(name)
         if key not in out:
-            out[key] = gid
+            out[key] = int(gid)
     return out
 
 
@@ -469,7 +469,7 @@ def _extend_lookup_from_pipe_col(
     for _, row in df.iterrows():
         val = row.get(col)
         gid = row.get(id_col)
-        if pd.isna(val) or pd.isna(gid):
+        if gid is None or bool(pd.isna(val)) or bool(pd.isna(gid)):
             continue
         for raw_alias in str(val).split("|"):
             cleaned = raw_alias.strip()
@@ -477,4 +477,4 @@ def _extend_lookup_from_pipe_col(
                 continue
             key = cleaned.upper() if ignore_case else cleaned
             if key not in lookup:
-                lookup[key] = gid
+                lookup[key] = int(gid)

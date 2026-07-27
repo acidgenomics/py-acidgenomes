@@ -6,14 +6,11 @@ Ported from ``Hgnc.R``, ``Mgi.R``, ``NcbiGeneInfo.R``, ``NcbiGeneHistory.R``,
 ``TxToGene-methods.R``.
 """
 
-from __future__ import annotations
-
-import gzip
 import io
 import logging
 import re
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -34,6 +31,7 @@ from acidgenomes._data import NCBI_TAX_IDS, NCBI_TAXONOMIC_GROUPS
 from acidgenomes._detect import detect_organism
 from acidgenomes._genome_build import current_ensembl_genome_build
 from acidgenomes._genome_version import current_ensembl_version
+from acidgenomes.gff import make_granges_from_gff
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +140,7 @@ def make_mgi() -> Mgi:
         io.StringIO(data_text),
         sep="\t",
         header=None,
-        names=col_names + ["_extra"],
+        names=[*col_names, "_extra"],
         na_values=["null", "NA"],
         dtype=str,
     )
@@ -241,7 +239,7 @@ def make_ncbi_gene_history(organism: str) -> NcbiGeneHistory:
     df = _rename_columns(df)
     tax_col = _find_tax_column(df)
     df[tax_col] = pd.to_numeric(df[tax_col], errors="coerce")
-    df = df[df[tax_col] == tax_id].copy()
+    df = pd.DataFrame(df[df[tax_col] == tax_id]).copy()
     df = df.drop(columns=[tax_col], errors="ignore")
     df = _rename_columns(df)
     _coerce_date_columns(df)
@@ -262,7 +260,7 @@ def _find_tax_column(df: pd.DataFrame) -> str:
             return c_snake
         if candidate in df.columns:
             return candidate
-    return df.columns[0]
+    return str(df.columns[0])
 
 
 def _coerce_date_columns(df: pd.DataFrame) -> None:
@@ -345,8 +343,8 @@ def _merge_jax_species(df: pd.DataFrame) -> pd.DataFrame:
             break
     if tax_col is None:
         raise RuntimeError("No taxonomy column found in JAX data.")
-    hs = df[df[tax_col] == 9606].copy()
-    mm = df[df[tax_col] == 10090].copy()
+    hs = pd.DataFrame(df[df[tax_col] == 9606]).copy()
+    mm = pd.DataFrame(df[df[tax_col] == 10090]).copy()
     hs_renames = {
         "ncbi_gene_id": "human_ncbi_gene_id",
         "gene_name": "human_gene_name",
@@ -385,32 +383,38 @@ def _find_merge_column(hs: pd.DataFrame, mm: pd.DataFrame) -> str:
 # -------------------------------------------------------------------------
 
 
-_NONCODING_BIOTYPES = frozenset({
-    "known_ncrna",
-    "lincRNA",
-    "lncRNA",
-    "non_coding",
-})
+_NONCODING_BIOTYPES = frozenset(
+    {
+        "known_ncrna",
+        "lincRNA",
+        "lncRNA",
+        "non_coding",
+    }
+)
 
-_SMALL_BIOTYPES = frozenset({
-    "miRNA",
-    "misc_RNA",
-    "ribozyme",
-    "rRNA",
-    "scaRNA",
-    "scRNA",
-    "snoRNA",
-    "snRNA",
-    "sRNA",
-})
+_SMALL_BIOTYPES = frozenset(
+    {
+        "miRNA",
+        "misc_RNA",
+        "ribozyme",
+        "rRNA",
+        "scaRNA",
+        "scRNA",
+        "snoRNA",
+        "snRNA",
+        "sRNA",
+    }
+)
 
-_DECAYING_BIOTYPES = frozenset({
-    "non_stop_decay",
-    "nonsense_mediated_decay",
-})
+_DECAYING_BIOTYPES = frozenset(
+    {
+        "non_stop_decay",
+        "nonsense_mediated_decay",
+    }
+)
 
 
-def _apply_broad_class(
+def _apply_broad_class(  # noqa: PLR0911
     biotype: str | None,
     chromosome: str | None,
     gene_name: str | None,
@@ -423,7 +427,7 @@ def _apply_broad_class(
     name_str = str(gene_name) if gene_name is not None else ""
     if re.match(r"(?i)^MT", chr_str) or re.match(r"(?i)^mt[:\-]", name_str):
         return "mito"
-    if biotype is None:
+    if biotype is None or not isinstance(biotype, str):
         return "other"
     if biotype == "protein_coding":
         return "coding"
@@ -498,7 +502,11 @@ def _ensembl_ftp_gene_metadata(
     try:
         gene_path = cache_url(gene_url)
         gene = pd.read_csv(
-            gene_path, sep="\t", header=None, na_values=["\\N"], quoting=3,
+            gene_path,
+            sep="\t",
+            header=None,
+            na_values=["\\N"],
+            quoting=3,
         )
     except Exception:
         logger.warning("Failed to download gene metadata: %s", gene_url)
@@ -519,7 +527,11 @@ def _ensembl_ftp_gene_metadata(
     try:
         syn_path = cache_url(syn_url)
         synonym = pd.read_csv(
-            syn_path, sep="\t", header=None, na_values=["\\N"], quoting=3,
+            syn_path,
+            sep="\t",
+            header=None,
+            na_values=["\\N"],
+            quoting=3,
         )
     except Exception:
         logger.warning("Failed to download synonyms: %s", syn_url)
@@ -540,13 +552,16 @@ def _ensembl_ftp_gene_metadata(
     try:
         entrez_path = cache_url(entrez_url)
         entrez = pd.read_csv(
-            entrez_path, sep="\t", na_values=["\\N"], quoting=3,
+            entrez_path,
+            sep="\t",
+            na_values=["\\N"],
+            quoting=3,
         )
     except Exception:
         logger.warning("Failed to download Entrez mapping: %s", entrez_url)
         return None
-    entrez = entrez[["gene_stable_id", "xref"]].dropna().drop_duplicates()
-    entrez = entrez[entrez["xref"].astype(str).str.fullmatch(r"\d+")]
+    entrez = pd.DataFrame(entrez[["gene_stable_id", "xref"]].dropna().drop_duplicates())
+    entrez = pd.DataFrame(entrez[pd.Series(entrez["xref"]).astype(str).str.fullmatch(r"\d+")])
     entrez["xref"] = entrez["xref"].astype(int)
     df_entrez = (
         entrez.groupby("gene_stable_id")["xref"]
@@ -562,47 +577,14 @@ def _ensembl_ftp_gene_metadata(
     return out
 
 
-def _ensembl_gtf_genes(
-    organism: str,
-    genome_build: str,
-    release: int,
-) -> pd.DataFrame:
-    """Download an Ensembl GTF and return gene-level rows as a DataFrame."""
+def _ensembl_gtf_url(organism: str, genome_build: str, release: int) -> str:
+    """Build the Ensembl FTP URL for a GTF file."""
     genome_build = re.sub(r"\.p\d+$", "", genome_build)
     slug = organism.replace(" ", "_")
-    url = (
+    return (
         f"https://ftp.ensembl.org/pub/release-{release}/gtf/{slug.lower()}/"
         f"{slug}.{genome_build}.{release}.gtf.gz"
     )
-    path = cache_url(url)
-    rows: list[dict] = []
-    with gzip.open(path, "rt") as fh:
-        for line in fh:
-            if line.startswith("#"):
-                continue
-            fields = line.rstrip("\n").split("\t")
-            if fields[2] != "gene":
-                continue
-            attrs: dict[str, str] = {}
-            for pair in fields[8].split(";"):
-                pair = pair.strip()
-                if not pair:
-                    continue
-                m = re.match(r'(\w+)\s+"(.+?)"', pair)
-                if m:
-                    attrs[m.group(1)] = m.group(2)
-            rows.append(
-                {
-                    "end": int(fields[4]),
-                    "gene_biotype": attrs.get("gene_biotype") or None,
-                    "gene_id": attrs.get("gene_id") or None,
-                    "gene_name": attrs.get("gene_name") or None,
-                    "seqnames": fields[0],
-                    "start": int(fields[3]),
-                    "strand": fields[6],
-                }
-            )
-    return pd.DataFrame(rows)
 
 
 def make_ensembl_genes_from_gtf(
@@ -615,8 +597,8 @@ def make_ensembl_genes_from_gtf(
     """Create an EnsemblGenes object from the Ensembl GTF.
 
     Downloads the current Ensembl GTF for the given organism, parses
-    gene-level annotations, and enriches with metadata from the Ensembl
-    FTP server. This is the Python equivalent of R ``makeGRangesFromEnsembl``.
+    gene-level annotations via the GFF parsing engine, and enriches with
+    metadata from the Ensembl FTP server.
 
     Parameters
     ----------
@@ -644,11 +626,11 @@ def make_ensembl_genes_from_gtf(
         genome_build = current_ensembl_genome_build(organism)
     if release is None:
         release = current_ensembl_version()
-    df = _ensembl_gtf_genes(
-        organism=organism,
-        genome_build=genome_build,
-        release=release,
-    )
+    url = _ensembl_gtf_url(organism, genome_build, release)
+    path = cache_url(url)
+    gr = make_granges_from_gff(path, level="genes", ignore_version=ignore_version)
+    # Convert to DataFrame for enrichment pipeline, then wrap in EnsemblGenes.
+    df = gr.to_pandas()
     return make_ensembl_genes(
         df,
         organism=organism,
@@ -658,7 +640,56 @@ def make_ensembl_genes_from_gtf(
     )
 
 
-def make_ensembl_genes(
+def make_granges_from_ensembl(
+    organism: str,
+    *,
+    level: Literal["genes", "transcripts", "exons"] = "genes",
+    genome_build: str | None = None,
+    release: int | None = None,
+    ignore_version: bool = False,
+    extra_mcols: bool = False,
+) -> Any:
+    """Parse the Ensembl GTF into a BiocPy GenomicRanges object.
+
+    This is the Python equivalent of R's ``makeGRangesFromEnsembl()``.
+    Downloads the Ensembl GTF for the organism and parses it using the
+    full GFF parsing engine.
+
+    Parameters
+    ----------
+    organism : str
+        Latin organism name (e.g. ``'Homo sapiens'``, ``'Mus musculus'``).
+    level : str
+        Feature level: ``"genes"``, ``"transcripts"``, or ``"exons"``.
+    genome_build : str or None
+        Ensembl genome build. Auto-detected if ``None``.
+    release : int or None
+        Ensembl release version. Auto-detected if ``None``.
+    ignore_version : bool
+        Whether to strip version suffixes from identifiers.
+    extra_mcols : bool
+        If ``True``, add ``broad_class`` annotations.
+
+    Returns
+    -------
+    GenomicRanges
+        BiocPy GenomicRanges object.
+    """
+    if genome_build is None:
+        genome_build = current_ensembl_genome_build(organism)
+    if release is None:
+        release = current_ensembl_version()
+    url = _ensembl_gtf_url(organism, genome_build, release)
+    path = cache_url(url)
+    return make_granges_from_gff(
+        path,
+        level=level,
+        ignore_version=ignore_version,
+        extra_mcols=extra_mcols,
+    )
+
+
+def make_ensembl_genes(  # noqa: PLR0912
     df: pd.DataFrame,
     organism: str | None = None,
     genome_build: str | None = None,
@@ -712,7 +743,9 @@ def make_ensembl_genes(
             for col in ("description", "gene_synonyms", "ncbi_gene_id"):
                 if col in df.columns:
                     extra = extra.drop(columns=[col], errors="ignore")
-            df = df.merge(extra, left_on=gene_id_col, right_on="gene_id", how="left", suffixes=("", "_ftp"))
+            df = df.merge(
+                extra, left_on=gene_id_col, right_on="gene_id", how="left", suffixes=("", "_ftp")
+            )
             if "gene_id_ftp" in df.columns:
                 df = df.drop(columns=["gene_id_ftp"])
     if "broad_class" not in df.columns and (
@@ -759,9 +792,9 @@ def make_ensembl_to_ncbi(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].dropna().drop_duplicates()
-    df = df[~df["ensembl_gene_id"].duplicated(keep="first")]
-    df = df[~df["ncbi_gene_id"].duplicated(keep="first")]
+    df = pd.DataFrame(df[cols].dropna().drop_duplicates())
+    df = pd.DataFrame(df[~df["ensembl_gene_id"].duplicated(keep="first")])
+    df = pd.DataFrame(df[~df["ncbi_gene_id"].duplicated(keep="first")])
     df = df.sort_values(cols).reset_index(drop=True)
     if organism is None:
         organism = detect_organism(df["ensembl_gene_id"].tolist())
@@ -793,9 +826,9 @@ def make_ncbi_to_ensembl(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].dropna().drop_duplicates()
-    df = df[~df["ncbi_gene_id"].duplicated(keep="first")]
-    df = df[~df["ensembl_gene_id"].duplicated(keep="first")]
+    df = pd.DataFrame(df[cols].dropna().drop_duplicates())
+    df = pd.DataFrame(df[~df["ncbi_gene_id"].duplicated(keep="first")])
+    df = pd.DataFrame(df[~df["ensembl_gene_id"].duplicated(keep="first")])
     df = df.sort_values(cols).reset_index(drop=True)
     if organism is None:
         organism = detect_organism(df["ensembl_gene_id"].tolist())
@@ -837,10 +870,10 @@ def make_gene_to_symbol(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].copy()
+    df = pd.DataFrame(df[cols]).copy()
     df = df.drop_duplicates()
     df = _drop_incomplete_symbols(df, quiet=quiet)
-    if df["gene_id"].duplicated().any():
+    if bool(df["gene_id"].duplicated().any()):
         df = df.drop_duplicates(subset=["gene_id"], keep="first")
     df = df.sort_values(cols).reset_index(drop=True)
     df = _apply_symbol_format(df, format=format)
@@ -855,7 +888,7 @@ def make_gene_to_symbol(
 def _drop_incomplete_symbols(df: pd.DataFrame, *, quiet: bool = False) -> pd.DataFrame:
     """Drop rows with missing gene_name values."""
     complete = df["gene_name"].notna()
-    if complete.all():
+    if bool(complete.all()):
         return df
     n_drop = (~complete).sum()
     if not quiet:
@@ -863,7 +896,7 @@ def _drop_incomplete_symbols(df: pd.DataFrame, *, quiet: bool = False) -> pd.Dat
             "Dropping %d identifier(s) without defined gene symbol.",
             n_drop,
         )
-    return df[complete].copy()
+    return pd.DataFrame(df[complete]).copy()
 
 
 def _apply_symbol_format(df: pd.DataFrame, *, format: str) -> pd.DataFrame:
@@ -927,18 +960,18 @@ def make_tx_to_gene(
     for c in cols:
         if c not in df.columns:
             raise ValueError(f"Missing required column: '{c}'.")
-    df = df[cols].copy()
+    df = pd.DataFrame(df[cols]).copy()
     df = df.drop_duplicates()
     complete = df.notna().all(axis=1)
-    if not complete.all():
+    if not bool(complete.all()):
         n_drop = (~complete).sum()
         if not quiet:
             logger.warning(
                 "Dropping %d element(s) without transcript-to-gene mapping.",
                 n_drop,
             )
-        df = df[complete].copy()
-    if df["tx_id"].duplicated().any():
+        df = pd.DataFrame(df[complete]).copy()
+    if bool(df["tx_id"].duplicated().any()):
         df = df.drop_duplicates(subset=["tx_id"], keep="first")
     df = df.sort_values(cols).reset_index(drop=True)
     meta: dict[str, Any] = {
