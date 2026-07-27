@@ -9,7 +9,7 @@ We recommend using [uv][] to install.
 
 ```sh
 uv pip install \
-    --index-url 'https://python.acidgenomics.com/' \
+    --index-url 'https://python.acidgenomics.com/simple/' \
     acidgenomes
 ```
 
@@ -17,7 +17,7 @@ Or add the index to your project's `pyproject.toml`:
 
 ```toml
 [[tool.uv.index]]
-url = "https://python.acidgenomics.com/"
+url = "https://python.acidgenomics.com/simple/"
 ```
 
 Then install:
