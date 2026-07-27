@@ -427,7 +427,7 @@ def _apply_broad_class(  # noqa: PLR0911
     name_str = str(gene_name) if gene_name is not None else ""
     if re.match(r"(?i)^MT", chr_str) or re.match(r"(?i)^mt[:\-]", name_str):
         return "mito"
-    if biotype is None:
+    if biotype is None or not isinstance(biotype, str):
         return "other"
     if biotype == "protein_coding":
         return "coding"

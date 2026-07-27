@@ -112,6 +112,7 @@ class TestAnnotatedDataFrame:
 
 
 from acidgenomes._constructors import (
+    _apply_broad_class,
     make_ensembl_genes,
     make_ensembl_to_ncbi,
     make_gene_to_symbol,
@@ -121,6 +122,12 @@ from acidgenomes._constructors import (
 
 
 class TestConstructors:
+    def test_apply_broad_class_nan_biotype(self) -> None:
+        # Ensembl release 116 GTF files can yield a float NaN biotype instead
+        # of None or a str, which previously raised AttributeError on .lower().
+        result = _apply_broad_class(biotype=float("nan"), chromosome="1", gene_name="GENE1")
+        assert result == "other"
+
     def test_make_ensembl_genes(self) -> None:
         df = pd.DataFrame({"gene_id": ["ENSG00000000003", "ENSG00000000005"]})
         obj = make_ensembl_genes(df, organism="Homo sapiens")
