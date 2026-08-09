@@ -69,6 +69,7 @@ def make_hgnc() -> Hgnc:
     Returns
     -------
     Hgnc
+        Validated HGNC dataset.
 
     Notes
     -----
@@ -120,6 +121,7 @@ def make_mgi() -> Mgi:
     Returns
     -------
     Mgi
+        Validated MGI dataset.
 
     Notes
     -----
@@ -182,6 +184,7 @@ def make_ncbi_gene_info(
     Returns
     -------
     NcbiGeneInfo
+        Validated NCBI gene info dataset.
     """
     if taxonomic_group is None:
         groups = NCBI_TAXONOMIC_GROUPS.get(organism)
@@ -224,10 +227,12 @@ def make_ncbi_gene_history(organism: str) -> NcbiGeneHistory:
     Parameters
     ----------
     organism : str
+        Latin organism name (e.g. 'Homo sapiens').
 
     Returns
     -------
     NcbiGeneHistory
+        Validated NCBI gene history dataset.
     """
     tax_id = NCBI_TAX_IDS.get(organism)
     if tax_id is None:
@@ -292,10 +297,12 @@ def make_jax_human_to_mouse(
     Parameters
     ----------
     unique : bool
+        Deduplicate the returned mapping, keeping one row per ortholog pair.
 
     Returns
     -------
     JaxHumanToMouse
+        Validated JAX ortholog mapping dataset.
     """
     logger.info("Importing JAX human-to-mouse orthologs.")
     url = "https://www.informatics.jax.org/downloads/reports/HOM_MouseHumanSequence.rpt"
@@ -616,11 +623,12 @@ def make_ensembl_genes_from_gtf(
     Returns
     -------
     EnsemblGenes
+        Validated Ensembl gene annotations.
 
     Examples
     --------
-    >>> genes = make_ensembl_genes_from_gtf("Homo sapiens")
-    >>> genes = make_ensembl_genes_from_gtf("Mus musculus")
+    >>> genes = make_ensembl_genes_from_gtf("Homo sapiens")  # doctest: +SKIP
+    >>> genes = make_ensembl_genes_from_gtf("Mus musculus")  # doctest: +SKIP
     """
     if genome_build is None:
         genome_build = current_ensembl_genome_build(organism)
@@ -701,14 +709,21 @@ def make_ensembl_genes(  # noqa: PLR0912
     Parameters
     ----------
     df : pd.DataFrame
+        Gene-level annotations, as returned by GFF parsing.
     organism : str or None
+        Latin organism name. Auto-detected from ``gene_id`` if ``None``.
     genome_build : str or None
+        Ensembl genome build. Auto-detected if ``None``.
     release : int or None
+        Ensembl release version. Auto-detected if ``None``.
     ignore_version : bool
+        Whether ``df``'s gene identifiers have version suffixes stripped.
 
     Returns
     -------
     EnsemblGenes
+        Validated Ensembl gene annotations, enriched with metadata from
+        the Ensembl FTP server when available.
     """
     df = df.copy()
     df.columns = [_to_snake(c) for c in df.columns]
@@ -780,11 +795,16 @@ def make_ensembl_to_ncbi(
     Parameters
     ----------
     df : pd.DataFrame
+        DataFrame containing ``ensembl_gene_id`` and ``ncbi_gene_id``
+        columns.
     organism : str or None
+        Latin organism name. Auto-detected from ``ensembl_gene_id`` if
+        ``None``.
 
     Returns
     -------
     EnsemblToNcbi
+        Deduplicated Ensembl-to-NCBI gene ID mapping.
     """
     df = df.copy()
     df.columns = [_to_snake(c) for c in df.columns]
@@ -814,11 +834,16 @@ def make_ncbi_to_ensembl(
     Parameters
     ----------
     df : pd.DataFrame
+        DataFrame containing ``ncbi_gene_id`` and ``ensembl_gene_id``
+        columns.
     organism : str or None
+        Latin organism name. Auto-detected from ``ensembl_gene_id`` if
+        ``None``.
 
     Returns
     -------
     NcbiToEnsembl
+        Deduplicated NCBI-to-Ensembl gene ID mapping.
     """
     df = df.copy()
     df.columns = [_to_snake(c) for c in df.columns]
@@ -854,12 +879,18 @@ def make_gene_to_symbol(
     Parameters
     ----------
     df : pd.DataFrame
+        DataFrame containing ``gene_id`` and ``gene_name`` columns.
     format : str
+        Symbol format: ``"make_unique"`` (deduplicate names by appending
+        suffixes), ``"1:1"`` (keep one gene per name), or ``"unmodified"``.
     quiet : bool
+        Suppress the warning logged when rows are dropped for a missing
+        gene symbol.
 
     Returns
     -------
     GeneToSymbol
+        Gene ID to gene symbol mapping.
     """
     valid_formats = ("make_unique", "1:1", "unmodified")
     if format not in valid_formats:
@@ -940,14 +971,22 @@ def make_tx_to_gene(
     Parameters
     ----------
     df : pd.DataFrame
+        DataFrame containing transcript and gene ID columns (accepts
+        ``transcript_id``/``transcriptid`` as aliases for ``tx_id``).
     organism : str or None
+        Latin organism name, recorded in the returned object's metadata.
     genome_build : str or None
+        Genome build, recorded in the returned object's metadata.
     release : int or str or None
+        Annotation release version, recorded in the returned object's
+        metadata.
     quiet : bool
+        Suppress the warning logged when incomplete rows are dropped.
 
     Returns
     -------
     TxToGene
+        Transcript ID to gene ID mapping.
     """
     df = df.copy()
     df.columns = [_to_snake(c) for c in df.columns]

@@ -10,7 +10,7 @@ def download_gencode_genome(
     *,
     genome_build: str | None = None,
     release: str | None = None,
-    output_dir: Path = Path.cwd(),
+    output_dir: Path | None = None,
     cache: bool = False,
 ) -> dict[str, Path]:
     """Download GENCODE genome FASTA, transcriptome FASTA, GTF, and GFF3.
@@ -24,8 +24,9 @@ def download_gencode_genome(
     release : str or None
         GENCODE release (e.g. ``"44"`` for human, ``"M33"`` for mouse).
         Auto-detected if ``None``.
-    output_dir : Path
-        Parent directory for the download.
+    output_dir : Path or None
+        Parent directory for the download. Defaults to the current
+        working directory at call time if ``None``.
     cache : bool
         If ``True``, skip downloading files that already exist.
 
@@ -41,6 +42,8 @@ def download_gencode_genome(
         genome_build = current_gencode_genome_build(organism)
     if release is None:
         release = current_gencode_version(organism)
+    if output_dir is None:
+        output_dir = Path.cwd()
 
     is_mouse = organism.lower().startswith("mus")
     if is_mouse and not str(release).startswith("M"):

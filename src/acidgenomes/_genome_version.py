@@ -19,6 +19,7 @@ def current_ensembl_version() -> int:
     Returns
     -------
     int
+        Ensembl release number.
 
     Examples
     --------
@@ -39,6 +40,8 @@ def current_gencode_version(organism: str = "Homo sapiens") -> str:
     Parameters
     ----------
     organism : str
+        Latin organism name. Only ``"Homo sapiens"`` and ``"Mus musculus"``
+        are supported.
 
     Returns
     -------
@@ -60,6 +63,7 @@ def current_refseq_version() -> str:
     Returns
     -------
     str
+        RefSeq release number.
     """
     url = "https://ftp.ncbi.nlm.nih.gov/refseq/release/RELEASE_NUMBER"
     return fetch_text(url).strip()
@@ -77,6 +81,7 @@ def current_flybase_version(dmel: bool = True) -> str:
     Returns
     -------
     str
+        Release version string.
     """
     url = "https://ftp.flybase.org/releases/current/RELEASE_NOTES"
     text = fetch_text(url)
@@ -95,6 +100,7 @@ def current_wormbase_version() -> str:
     Returns
     -------
     str
+        WormBase release version string (e.g. ``'WS295'``).
     """
     url = "https://ftp.wormbase.org/pub/wormbase/releases/current-production-release"
     text = fetch_text(url)

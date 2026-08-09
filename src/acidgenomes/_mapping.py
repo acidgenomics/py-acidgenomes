@@ -46,12 +46,17 @@ def map_gene_names_to_hgnc(
     Parameters
     ----------
     genes : list[str]
+        Gene names (symbols) to map.
     ignore_case : bool
+        Match case-insensitively.
     hgnc : Hgnc or None
+        HGNC reference dataset. Downloaded via :func:`make_hgnc` if
+        ``None``.
 
     Returns
     -------
     list[int]
+        HGNC identifiers, in the same order as ``genes``.
 
     Raises
     ------
@@ -93,14 +98,21 @@ def map_gene_names_to_ncbi(
     Parameters
     ----------
     genes : list[str]
+        Gene names (symbols) to map.
     organism : str
+        Latin organism name.
     taxonomic_group : str or None
+        NCBI FTP taxonomic group. Auto-detected if ``None``.
     ignore_case : bool
+        Match case-insensitively.
     ncbi : NcbiGeneInfo or None
+        NCBI gene info reference dataset. Downloaded via
+        :func:`make_ncbi_gene_info` if ``None``.
 
     Returns
     -------
     list[int]
+        NCBI (Entrez) gene identifiers, in the same order as ``genes``.
     """
     if ncbi is None:
         ncbi = make_ncbi_gene_info(organism=organism, taxonomic_group=taxonomic_group)
@@ -137,14 +149,23 @@ def map_gene_names_to_ensembl(
     Parameters
     ----------
     genes : list[str]
+        Gene names (symbols) to map.
     organism : str
+        Latin organism name.
     ignore_case : bool
+        Match case-insensitively.
     hgnc : Hgnc or None
+        HGNC reference dataset (used for Homo sapiens). Downloaded via
+        :func:`make_hgnc` if ``None``.
     ncbi : NcbiGeneInfo or None
+        NCBI gene info reference dataset (used for other organisms, or
+        when explicitly provided). Downloaded via
+        :func:`make_ncbi_gene_info` if ``None`` and required.
 
     Returns
     -------
     list[str]
+        Ensembl gene identifiers, in the same order as ``genes``.
     """
     if organism == "Homo sapiens" and ncbi is None:
         return _map_genes_to_ensembl_via_hgnc(genes, ignore_case=ignore_case, hgnc=hgnc)
@@ -245,10 +266,12 @@ def map_gencode_to_ensembl(release: int | str) -> int:
     Parameters
     ----------
     release : int or str
+        GENCODE release (e.g. ``46`` or ``"M35"`` for mouse).
 
     Returns
     -------
     int
+        Corresponding Ensembl release version.
     """
     release_str = str(release)
     short = "mouse" if release_str.startswith("M") else "human"
@@ -281,10 +304,14 @@ def map_ensembl_release_to_url(release: int | None = None) -> str:
     Parameters
     ----------
     release : int or None
+        Ensembl release version. Returns the current (non-archived) site
+        URL if ``None``.
 
     Returns
     -------
     str
+        Archive site URL for the requested release, or the current site
+        URL if ``release`` is ``None``.
     """
     current = "https://useast.ensembl.org"
     if release is None:
@@ -319,15 +346,23 @@ def import_tx_to_gene(
     Parameters
     ----------
     file : str
+        Path to a headerless, two-column (transcript ID, gene ID) file.
     organism : str or None
+        Latin organism name, recorded in the returned object's metadata.
     genome_build : str or None
+        Genome build, recorded in the returned object's metadata.
     release : int or str or None
+        Annotation release version, recorded in the returned object's
+        metadata.
     ignore_tx_version : bool
+        Strip version suffixes from transcript identifiers.
     ignore_gene_version : bool
+        Strip version suffixes from gene identifiers.
 
     Returns
     -------
     TxToGene
+        Transcript ID to gene ID mapping.
     """
     df = pd.read_csv(file, header=None, names=["tx_id", "gene_id"])
     if ignore_tx_version:
@@ -357,12 +392,18 @@ def map_human_orthologs(
     Parameters
     ----------
     genes : list[str]
+        Ensembl gene identifiers from a non-human organism.
     organism : str or None
+        Latin organism name of ``genes``. Auto-detected if ``None``.
     ensembl_release : int or None
+        Ensembl release version to query. Uses the current release if
+        ``None``.
 
     Returns
     -------
     pd.DataFrame
+        Deduplicated mapping with ``gene_id`` and ``human_gene_id``
+        columns.
     """
     if organism is None:
         organism = detect_organism(genes)

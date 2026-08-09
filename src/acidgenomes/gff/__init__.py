@@ -1,10 +1,10 @@
 """GFF/GTF parsing subpackage.
 
-Public API
-----------
-make_granges_from_gff
-    Parse any GFF3 or GTF file into a BiocPy GenomicRanges object, with
-    automatic provider detection and provider-specific feature extraction.
+Notes
+-----
+Public API: ``make_granges_from_gff`` parses any GFF3 or GTF file into a
+BiocPy GenomicRanges object, with automatic provider detection and
+provider-specific feature extraction.
 """
 
 from pathlib import Path

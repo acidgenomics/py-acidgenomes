@@ -40,10 +40,13 @@ def strip_gene_versions(identifiers: list[str]) -> list[str]:
     Parameters
     ----------
     identifiers : list[str]
+        Gene identifiers, optionally suffixed with a version (e.g.
+        ``"ENSG00000000003.14"``).
 
     Returns
     -------
     list[str]
+        Identifiers with version suffixes removed.
 
     Examples
     --------
@@ -59,10 +62,13 @@ def strip_transcript_versions(identifiers: list[str]) -> list[str]:
     Parameters
     ----------
     identifiers : list[str]
+        Transcript identifiers, optionally suffixed with a version (e.g.
+        ``"ENST00000000233.10"``).
 
     Returns
     -------
     list[str]
+        Identifiers with version suffixes removed.
 
     Examples
     --------
@@ -78,10 +84,13 @@ def strip_exon_versions(identifiers: list[str]) -> list[str]:
     Parameters
     ----------
     identifiers : list[str]
+        Exon identifiers, optionally suffixed with a version (e.g.
+        ``"ENSE00000000001.2"``).
 
     Returns
     -------
     list[str]
+        Identifiers with version suffixes removed.
 
     Examples
     --------

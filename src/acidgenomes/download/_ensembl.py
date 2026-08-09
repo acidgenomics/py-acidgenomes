@@ -11,7 +11,7 @@ def download_ensembl_genome(
     *,
     genome_build: str | None = None,
     release: int | None = None,
-    output_dir: Path = Path.cwd(),
+    output_dir: Path | None = None,
     cache: bool = False,
 ) -> dict[str, Path]:
     """Download Ensembl genome FASTA, transcriptome FASTA, and GTF/GFF3.
@@ -24,8 +24,9 @@ def download_ensembl_genome(
         Ensembl genome build. Auto-detected if ``None``.
     release : int or None
         Ensembl release number. Auto-detected if ``None``.
-    output_dir : Path
-        Parent directory for the download.
+    output_dir : Path or None
+        Parent directory for the download. Defaults to the current
+        working directory at call time if ``None``.
     cache : bool
         If ``True``, skip downloading files that already exist.
 
@@ -42,6 +43,8 @@ def download_ensembl_genome(
         genome_build = current_ensembl_genome_build(organism)
     if release is None:
         release = current_ensembl_version()
+    if output_dir is None:
+        output_dir = Path.cwd()
 
     build_clean = re.sub(r"\.p\d+$", "", genome_build)
     slug = organism.replace(" ", "_")

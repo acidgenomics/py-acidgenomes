@@ -47,10 +47,12 @@ def current_gencode_genome_build(organism: str = "Homo sapiens") -> str:
     Parameters
     ----------
     organism : str
+        Latin organism name.
 
     Returns
     -------
     str
+        Genome build name (e.g. ``'GRCh38'``).
     """
     return current_ensembl_genome_build(organism)
 
@@ -63,10 +65,12 @@ def current_refseq_genome_build(organism: str = "Homo sapiens") -> str:
     Parameters
     ----------
     organism : str
+        Latin organism name.
 
     Returns
     -------
     str
+        Genome build name.
     """
     url = "https://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/assembly_summary.txt"
     text = fetch_text(url)
@@ -88,10 +92,12 @@ def current_ucsc_genome_build(organism: str = "Homo sapiens") -> str:
     Parameters
     ----------
     organism : str
+        Latin organism name.
 
     Returns
     -------
     str
+        Genome build name (UCSC database name, e.g. ``'hg38'``).
     """
     organism.lower().replace(" ", "_")
     url = "https://api.genome.ucsc.edu/list/ucscGenomes"

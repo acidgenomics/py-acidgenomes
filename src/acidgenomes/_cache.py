@@ -24,6 +24,11 @@ def get_cache_dir() -> Path:
 
     Uses ``ACIDGENOMES_CACHE_DIR`` env var if set, otherwise
     ``~/.cache/acidgenomes``.
+
+    Returns
+    -------
+    Path
+        Cache directory path.
     """
     cache = Path(os.environ.get("ACIDGENOMES_CACHE_DIR", _DEFAULT_CACHE_DIR))
     cache.mkdir(parents=True, exist_ok=True)
@@ -63,14 +68,40 @@ def cache_url(url: str, *, force: bool = False) -> Path:
 
 
 def fetch_json(url: str, **kwargs: Any) -> dict:
-    """GET *url* and return the parsed JSON body."""
+    """GET *url* and return the parsed JSON body.
+
+    Parameters
+    ----------
+    url : str
+        Remote URL to fetch.
+    **kwargs
+        Additional keyword arguments passed to ``requests.get``.
+
+    Returns
+    -------
+    dict
+        Parsed JSON response body.
+    """
     resp = requests.get(url, timeout=30, **kwargs)
     resp.raise_for_status()
     return resp.json()
 
 
 def fetch_text(url: str, **kwargs: Any) -> str:
-    """GET *url* and return the response body as text."""
+    """GET *url* and return the response body as text.
+
+    Parameters
+    ----------
+    url : str
+        Remote URL to fetch.
+    **kwargs
+        Additional keyword arguments passed to ``requests.get``.
+
+    Returns
+    -------
+    str
+        Response body text.
+    """
     resp = requests.get(url, timeout=30, **kwargs)
     resp.raise_for_status()
     return resp.text

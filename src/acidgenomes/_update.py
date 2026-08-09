@@ -26,7 +26,9 @@ def update_gene_symbols(
     Parameters
     ----------
     gene_names : list[str]
+        Gene names to look up. Must not contain duplicates or NA values.
     organism : str
+        Latin organism name.
 
     Returns
     -------

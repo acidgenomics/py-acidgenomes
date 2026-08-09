@@ -10,7 +10,7 @@ def download_refseq_genome(
     *,
     taxonomic_group: str | None = None,
     genome_build: str | None = None,
-    output_dir: Path = Path.cwd(),
+    output_dir: Path | None = None,
     cache: bool = False,
 ) -> dict[str, Path]:
     """Download RefSeq genome GFF3 and GTF annotation files.
@@ -24,8 +24,9 @@ def download_refseq_genome(
         Auto-detected from internal mapping if ``None``.
     genome_build : str or None
         RefSeq genome build. Auto-detected if ``None``.
-    output_dir : Path
-        Parent directory for the download.
+    output_dir : Path or None
+        Parent directory for the download. Defaults to the current
+        working directory at call time if ``None``.
     cache : bool
         If ``True``, skip downloading files that already exist.
 
@@ -43,6 +44,8 @@ def download_refseq_genome(
     # genome_build used for label only; accession is resolved from assembly_summary.
     if genome_build is None:
         genome_build = current_refseq_genome_build(organism)
+    if output_dir is None:
+        output_dir = Path.cwd()
 
     # RefSeq uses NCBI FTP paths. We look up the accession from NCBI assembly_summary.
     import requests
