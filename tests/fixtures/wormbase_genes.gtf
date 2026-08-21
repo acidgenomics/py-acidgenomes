@@ -1,0 +1,4 @@
+#genebuild-version WS289
+I	WormBase	gene	3747	3910	.	-	.	gene_id "WBGene00000001"; gene_source "WormBase"; gene_biotype "protein_coding"; gene_name "aap-1";
+I	WormBase	transcript	3747	3910	.	-	.	gene_id "WBGene00000001"; transcript_id "Y110A7A.10"; gene_name "aap-1";
+I	WormBase	exon	3747	3910	.	-	.	gene_id "WBGene00000001"; transcript_id "Y110A7A.10"; exon_number "1";

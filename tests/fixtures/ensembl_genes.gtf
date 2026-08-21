@@ -1,0 +1,8 @@
+#!genome-build GRCh38
+#!genome-build-accession GCA_000001405.29
+#!genome-version GRCh38
+#!genebuild-last-updated 2023-01
+17	ensembl_havana	gene	7661779	7687538	.	-	.	gene_id "ENSG00000141510"; gene_version "18"; gene_name "TP53"; gene_source "ensembl_havana"; gene_biotype "protein_coding";
+17	ensembl_havana	transcript	7661779	7687538	.	-	.	gene_id "ENSG00000141510"; gene_version "18"; transcript_id "ENST00000269305"; transcript_version "9"; gene_name "TP53"; gene_source "ensembl_havana"; gene_biotype "protein_coding"; transcript_name "TP53-201"; transcript_source "ensembl_havana"; transcript_biotype "protein_coding";
+17	ensembl_havana	exon	7687377	7687538	.	-	.	gene_id "ENSG00000141510"; gene_version "18"; transcript_id "ENST00000269305"; transcript_version "9"; exon_number "1"; exon_id "ENSE00002419584"; exon_version "1"; gene_name "TP53"; gene_source "ensembl_havana"; gene_biotype "protein_coding"; transcript_name "TP53-201"; transcript_source "ensembl_havana"; transcript_biotype "protein_coding";
+17	ensembl_havana	exon	7661779	7661872	.	-	.	gene_id "ENSG00000141510"; gene_version "18"; transcript_id "ENST00000269305"; transcript_version "9"; exon_number "11"; exon_id "ENSE00003625790"; exon_version "1"; gene_name "TP53"; gene_source "ensembl_havana"; gene_biotype "protein_coding"; transcript_name "TP53-201"; transcript_source "ensembl_havana"; transcript_biotype "protein_coding";
