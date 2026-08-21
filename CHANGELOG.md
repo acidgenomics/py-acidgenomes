@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1 (2026-08-21)
+## 0.2.0 (2026-07-13, updated 2026-08-21)
 
 ### Bug Fixes
 
@@ -17,13 +17,16 @@
   GENCODE, RefSeq, UCSC, FlyBase, WormBase) routes through the shared
   `dataframe_to_granges` / `make_granges_from_gff` pipeline, so this fixes all
   of them, not Ensembl alone.
+- The `0.2.0` package index artifact was rebuilt in place on 2026-08-21 to
+  carry this fix. The `v0.2.0` git tag still points at the original
+  2026-07-13 commit; the fix landed in a later commit on `main`, so
+  `git checkout v0.2.0` will not reproduce the artifact currently served
+  from the index. See git history for the exact commit if this matters.
 
 ### Tests
 
 - Add `tests/test_genomicranges_to_pandas_safe.py`. It covers the upstream bug
   and the workaround through the real `dataframe_to_granges` construction path.
-
-## 0.2.0 (2026-07-13)
 
 ### Changes
 
