@@ -40,6 +40,22 @@ nav {
     font-family: monospace-web, monospace;
 }
 
+/* colors.css's own `body > header h1 { color: var(--bright-color) }` is
+ * tuned for steinbaugh.com's blog posts, where a bright/neutral title
+ * reads as a deliberate contrast against purple in-content headings. On
+ * this theme's own pages (every page's title lives in `body > header`,
+ * see layout.html), that reads as an inconsistency instead: the
+ * python.acidgenomics.com landing page's own `<h1>` isn't wrapped in a
+ * `<header>` at all (it's hand-rolled HTML, not this Sphinx theme), so it
+ * falls through to the generic `h1, h2, ... { color: var(--header-color) }`
+ * rule (purple) same as every in-content heading -- leaving every Sphinx
+ * page's own title as the only bright/white heading on either site. Same
+ * specificity as colors.css's rule, loads after its @import, so this wins
+ * outright with no !important needed. */
+body > header h1 {
+    color: var(--header-color);
+}
+
 /* base.css's nav/header mechanism (negative margins, absolute positioning,
  * paired top/bottom borders on <header>, the >=1000px bleed-wider effect in
  * responsive.css) is left entirely as-is: layout.html renders a real
@@ -47,9 +63,38 @@ nav {
  * invariant that mechanism assumes. Position/spacing are untouched; the
  * breadcrumb's background image itself is set inline by layout.html from
  * the theme's `logo_url` option, not hardcoded here, since it differs per
- * site (koopa vs. each python.acidgenomics.com package). The optional repo
- * link (theme's `repo_url` option) renders inside #breadcrumb itself, so it
- * inherits that div's positioning with no extra rule needed here. */
+ * site (koopa vs. each python.acidgenomics.com package). */
+
+/* The Acid Genomics/GitHub icons and the search form are one flex row
+ * (div.nav-tools), not independently absolute-positioned siblings each
+ * guessing the others' width -- that guessing is what let the repo-link
+ * icon overlap the search input at some viewport widths. Take over
+ * base.css's usual `body > nav form` slot (bottom:0; right:0) on the
+ * group itself; the <form> inside is de-positioned back to static so it
+ * participates in the row instead of also trying to self-place. */
+nav div.nav-tools {
+    align-items: center;
+    bottom: 0;
+    column-gap: 0.75rem;
+    display: flex;
+    position: absolute;
+    right: 0;
+}
+
+nav div.nav-tools form {
+    position: static;
+}
+
+nav #acidgenomics-link,
+nav #repo-link {
+    color: var(--foreground-color);
+    line-height: 0;
+}
+
+nav #acidgenomics-link svg,
+nav #repo-link svg {
+    display: block;
+}
 
 /* -- map Sphinx/basic-theme class names onto base.css's selectors --------
  * base.css was written for hand-rolled Jekyll HTML (article, div.highlighter-
@@ -63,8 +108,14 @@ div.document {
     padding: 0;
 }
 
-div.footer {
-    font-size: 0.875em;
+/* basic.css's 360px floor exists for its 230px-sidebar layout, which
+ * theme.toml's `sidebars = []` disables here. Below ~424px of viewport,
+ * that floor exceeds the content box responsive.css allows (e.g. 311px at a
+ * 375px iPhone width) and scrolls the whole page sideways instead of
+ * wrapping text. max-width: 800px on the same basic.css rule is left as-is --
+ * it agrees with base.css's own body max-width. */
+div.body {
+    min-width: 0;
 }
 
 /* Every docs/*.md file opens with a MyST `# Title` heading, which docutils
@@ -74,8 +125,12 @@ div.body > section > h1:first-child {
     display: none;
 }
 
+/* basic.css sets font-size: 90% on div.related for its own relbar (meant to
+ * read as a secondary strip below a full-size heading); this theme reuses
+ * the class for the prev/next links, which should read at normal body size. */
 div.related {
     display: flex;
+    font-size: 1em;
     justify-content: space-between;
     margin: 2rem 0;
 }
@@ -103,11 +158,34 @@ code {
  * lists to plain browser bullets, losing the site's actual colored/custom
  * marker -- switch the positioning mechanism instead: position:absolute
  * doesn't care whether the sibling content is inline or block, so the
- * marker keeps base.css's own color/content, just anchored differently. */
+ * marker keeps base.css's own color/content, just anchored differently.
+ * base.css never resets the browser's default ~40px ul/ol padding (it
+ * relies on that space for its own inline hanging-indent trick); this
+ * self-contained absolute marker needs none of it, so zero it here or every
+ * list reads as double-indented (40px browser default + our own 1.5em).
+ * On the reference page, base.css's negative margin pulls the marker back
+ * INTO the gutter responsive.css's `ul { margin-left: 2rem/1rem }` already
+ * reserves, so list text lands flush with that margin -- the marker
+ * borrows the gutter rather than adding to it. padding-left here reserves
+ * an equivalent gutter for the absolute marker, but as real, additive
+ * space nothing was pulling back out of the ul's own margin, so text sat
+ * a full 1.5em past the reference's position. margin-left: -1.5em pulls
+ * the whole <li> box (and, since position:absolute descendants are placed
+ * from the nearest positioned ancestor's padding edge, its marker with
+ * it) back by the same amount the padding adds forward, so the marker
+ * ends up inside the ul's margin and the text flush with its edge --
+ * matching the reference exactly at both breakpoints, since the pull-back
+ * tracks whichever margin responsive.css has active. */
 div.body li {
     margin-bottom: 0.25rem;
+    margin-left: -1.5em;
     padding-left: 1.5em;
     position: relative;
+}
+
+div.body ul,
+div.body ol {
+    padding-left: 0;
 }
 
 div.body li::before {
@@ -130,11 +208,94 @@ a.headerlink {
     display: none;
 }
 
-/* ASCII-art logo on the index page: plain text, not a code sample. */
+/* Sphinx's generated in-page TOC always wraps the real entries in one extra
+ * <li> linking back to the current page itself (href="#") -- layout.html's
+ * `toc` block unwraps that redundant level in the template (child selectors
+ * like base.css's `body > header > #toc` match the DOM, not the box model,
+ * so no CSS trick here could have promoted a grandchild <ul> up into that
+ * slot) and tags the real list `id="toc"`, so it inherits base.css's
+ * #toc-specific separator border above it. */
 
-div.koopa-logo pre {
+/* #toc's own left offset is deliberately NOT the reference page's: on
+ * steinbaugh.com, base.css/responsive.css line the TOC's top level up
+ * flush with the page's own headings (margin-left forced to 0 by base.css's
+ * `body > header > #toc { margin: 2rem 0 0 0 }`, indented only via
+ * responsive.css's own padding-left: 1rem/2rem, or the >=1000px bleed
+ * pairing of margin-left:-3rem with padding-left:3rem, which nets back to
+ * 0). On this site every other bulleted list -- div.body's own content
+ * lists included -- gets its indent from responsive.css's generic
+ * `ul { margin-left: 2rem/1rem }` rule instead (div.body's own block above
+ * zeroes ul/ol padding-left and leans on that margin alone), so a TOC
+ * flush with the heading reads as offset from, not aligned with, the
+ * page's other lists.
+ *
+ * Fix the offset with padding, never margin: base.css's border-top
+ * separator lives on #toc's own border box, and margin sits outside the
+ * border box -- shrinking #toc's margin-left (an earlier attempt at this
+ * rule did, to reuse responsive.css's generic per-breakpoint margins
+ * directly) pulls the border-top in with it, so it no longer spans the
+ * same width as body > header's own border-bottom immediately below the
+ * whole title+toc block (that outer border is on a DIFFERENT element,
+ * unaffected, so the two visibly stop lining up). Padding, by contrast,
+ * only moves #toc's CONTENT edge inward, leaving the border box, and the
+ * `body > header > #toc, body > header, body > nav + *, hr` bleed pairing
+ * they otherwise share pixel-for-pixel, untouched. Below the >=1000px
+ * breakpoint, responsive.css's own padding-left (1rem/2rem) already
+ * happens to net out to the same offset div.body's own lists use at
+ * those widths (same rem constants, reused by design), so nothing needs
+ * overriding there. Only >=1000px diverges: the bleed's margin-left:-3rem/
+ * padding-left:3rem pairing nets to 0 (flush with the heading) where
+ * div.body's own un-bled lists still sit at their normal +2rem margin, so
+ * add exactly that much more padding-left on top of the bleed's existing
+ * 3rem, leaving its margin-left:-3rem (and thus the border width it
+ * shares with header) alone. Nested <ul>s inside #toc still need their
+ * own browser-default ~40px padding zeroed (div.body's own nested lists
+ * get this for free, since acidgenomics.css's div.body ul/ol rule above
+ * applies at any depth) so each further level adds exactly one more
+ * margin step, matching div.body's own nested lists rather than roughly
+ * doubling it. TOC <li> content is a bare inline <a> (not the <li><p>
+ * docutils wraps list items in inside div.body), so base.css's own
+ * inline-block marker mechanism (`li:before { margin-left: -1.5em;
+ * margin-right: 0.5em; width: 1em }`) already lands the marker and text
+ * at this corrected edge with no li-level override needed. */
+body > header > #toc ul {
+    padding-left: 0;
+}
+
+@media screen and (min-width: 1000px) {
+    body > header > #toc {
+        padding-left: 5rem;
+    }
+}
+
+/* ASCII-art mark in body > header (theme's `header_ascii` option, root page
+ * only, see layout.html): plain text, not a code sample -- undo acidgenomics.
+ * css's own `pre` rule (border/radius/padding) below. colors.css colors
+ * body > header h1..h7 but not pre, so set the color explicitly. overflow:
+ * hidden clips rather than horizontally scrolls the whole page on viewports
+ * narrower than the art itself. margin: 0 undoes base.css's blanket
+ * `pre { margin: 1rem 0 }`, which would otherwise stack on top of the
+ * header's own `padding: 2rem 0` and float the art away from the title.
+ * The header's border/margin/padding are deliberately left to base.css so
+ * the root page's header matches every subpage. */
+body > header > pre {
     border: none;
+    color: var(--header-color);
+    margin: 0;
+    overflow: hidden;
     padding: 0;
+}
+
+/* Home-page screenshot (theme's `header_ascii`/`tagline` sibling content --
+ * see docs/index.md's <picture> pair). Ported from the previous Jekyll
+ * site's `html#front img` rule. max-width: 100% and centering already come
+ * from basic.css's `img` rule and base.css's `p img`. */
+div.body p img.screenshot {
+    background: var(--border-color);
+    border-radius: 1rem;
+    margin-left: -2px;
+    margin-right: -2px;
+    padding: 2px;
 }
 
 /* -- API reference: autodoc/autosummary/numpydoc output -------------------

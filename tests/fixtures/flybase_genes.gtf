@@ -1,0 +1,4 @@
+3R	FlyBase	gene	567076	2531891	.	+	.	gene_id "FBgn0000490"; gene_symbol "kek1"; gene_biotype "protein_coding";
+3R	FlyBase	mRNA	567076	2531891	.	+	.	gene_id "FBgn0000490"; transcript_id "FBtr0070000"; gene_symbol "kek1"; transcript_biotype "protein_coding";
+3R	FlyBase	exon	567076	567200	.	+	.	gene_id "FBgn0000490"; transcript_id "FBtr0070000"; exon_id "FBgn0000490:1";
+3R	FlyBase	exon	2531700	2531891	.	+	.	gene_id "FBgn0000490"; transcript_id "FBtr0070000"; exon_id "FBgn0000490:2";

@@ -5,3 +5,7 @@
 !docs/_themes/**/*.html
 docs/_build/
 docs/reference/generated/
+
+# The global core.excludesFile ignores *.gtf; these are hand-authored test fixtures.
+!tests/fixtures/
+!tests/fixtures/*.gtf
