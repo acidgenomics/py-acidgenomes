@@ -18,10 +18,9 @@
   `dataframe_to_granges` / `make_granges_from_gff` pipeline, so this fixes all
   of them, not Ensembl alone.
 - The `0.2.0` package index artifact was rebuilt in place on 2026-08-21 to
-  carry this fix. The `v0.2.0` git tag still points at the original
-  2026-07-13 commit; the fix landed in a later commit on `main`, so
-  `git checkout v0.2.0` will not reproduce the artifact currently served
-  from the index. See git history for the exact commit if this matters.
+  carry this fix. The `v0.2.0` git tag was moved to match, so
+  `git checkout v0.2.0` reproduces the artifact currently served from the
+  index.
 
 ### Tests
 
