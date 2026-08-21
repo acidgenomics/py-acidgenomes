@@ -18,6 +18,67 @@ from genomicranges import GenomicRanges
 from acidgenomes.gff._convert import dataframe_to_granges
 
 # ---------------------------------------------------------------------------
+# GenomicRanges/pandas interop
+# ---------------------------------------------------------------------------
+
+
+def _genomicranges_to_pandas_safe(gr: GenomicRanges) -> pd.DataFrame:
+    """Convert a GenomicRanges to a DataFrame, working around a genomicranges bug.
+
+    ``GenomicRanges.to_pandas()`` (as of ``genomicranges==0.8.4``) overwrites
+    the range-columns DataFrame's index with ``gr.names`` *before*
+    concatenating it with ``gr.mcols.to_pandas()``, whose index is left at
+    the default positional ``RangeIndex``. Because the two indices are then
+    disjoint (e.g. gene-ID strings vs. ints), ``pd.concat(..., axis=1)``
+    outer-joins on mismatched labels instead of stacking columns
+    positionally -- silently doubling the row count, with every row missing
+    either its coordinate columns (seqnames/start/end/strand/width) or its
+    metadata columns (NaN-filled on whichever side has no matching label).
+
+    Confirmed 2026-08-20 against a live Ensembl GTF parse via
+    :func:`make_ensembl_genes_from_gtf`: both the human and mouse gene
+    annotation tables built from this package's output were silently
+    corrupted at exactly 2x the true row count. Any ``GenomicRanges`` built
+    with a top-level ``names=`` and a separate ``mcols=`` (which is exactly
+    what :func:`acidgenomes.gff.dataframe_to_granges` constructs) hits this.
+
+    This reproduces ``GenomicRanges.to_pandas()``'s own logic, but resets
+    both halves to a shared default positional index *before*
+    concatenating (guaranteeing a positional column-bind), applying
+    ``gr.names`` as the index only afterward. Used at every call site in
+    this package that converts a freshly-built ``GenomicRanges`` to a
+    DataFrame, in place of ``gr.to_pandas()``.
+
+    Parameters
+    ----------
+    gr : GenomicRanges
+        A BiocPy GenomicRanges object.
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per range, with no NaN-split artifacts.
+    """
+    ranges_df = gr.ranges.to_pandas().reset_index(drop=True)
+    ranges_df["seqnames"] = gr.get_seqnames()
+    ranges_df["strand"] = gr.get_strand(as_type="list")
+    mcols = gr.mcols
+    if mcols is not None and mcols.shape[1] > 0:
+        mcols_df = mcols.to_pandas().reset_index(drop=True)
+        out = pd.concat([ranges_df, mcols_df], axis=1)
+    else:
+        out = ranges_df
+    if gr.names is not None:
+        out.index = list(gr.names)
+    assert len(out) == len(gr), (
+        f"_genomicranges_to_pandas_safe produced {len(out)} rows for a "
+        f"{len(gr)}-range GenomicRanges -- the genomicranges index-alignment "
+        "bug this function works around may have changed shape."
+    )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Validation helpers
 # ---------------------------------------------------------------------------
 
@@ -139,7 +200,7 @@ class _GRangesWrapper:
         if self._df is not None and self._gr is None:
             return self._df
         gr = self.granges
-        return gr.to_pandas()
+        return _genomicranges_to_pandas_safe(gr)
 
     @property
     def organism(self) -> str | None:
