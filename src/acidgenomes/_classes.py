@@ -58,6 +58,11 @@ def _genomicranges_to_pandas_safe(gr: GenomicRanges) -> pd.DataFrame:
     -------
     pd.DataFrame
         One row per range, with no NaN-split artifacts.
+
+    Raises
+    ------
+    RuntimeError
+        If the conversion does not produce exactly one row per range.
     """
     ranges_df = gr.ranges.to_pandas().reset_index(drop=True)
     ranges_df["seqnames"] = gr.get_seqnames()
@@ -70,11 +75,14 @@ def _genomicranges_to_pandas_safe(gr: GenomicRanges) -> pd.DataFrame:
         out = ranges_df
     if gr.names is not None:
         out.index = list(gr.names)
-    assert len(out) == len(gr), (
-        f"_genomicranges_to_pandas_safe produced {len(out)} rows for a "
-        f"{len(gr)}-range GenomicRanges -- the genomicranges index-alignment "
-        "bug this function works around may have changed shape."
-    )
+    if len(out) != len(gr):
+        msg = (
+            f"_genomicranges_to_pandas_safe produced {len(out)} rows for a "
+            f"{len(gr)}-range GenomicRanges -- the genomicranges "
+            "index-alignment bug this function works around may have changed "
+            "shape."
+        )
+        raise RuntimeError(msg)
     return out
 
 
