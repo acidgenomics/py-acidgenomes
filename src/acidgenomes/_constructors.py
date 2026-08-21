@@ -26,6 +26,7 @@ from acidgenomes._classes import (
     NcbiGeneInfo,
     NcbiToEnsembl,
     TxToGene,
+    _genomicranges_to_pandas_safe,
 )
 from acidgenomes._data import NCBI_TAX_IDS, NCBI_TAXONOMIC_GROUPS
 from acidgenomes._detect import detect_organism
@@ -638,7 +639,9 @@ def make_ensembl_genes_from_gtf(
     path = cache_url(url)
     gr = make_granges_from_gff(path, level="genes", ignore_version=ignore_version)
     # Convert to DataFrame for enrichment pipeline, then wrap in EnsemblGenes.
-    df = gr.to_pandas()
+    # Uses the safe conversion, not gr.to_pandas() directly -- see
+    # _genomicranges_to_pandas_safe's docstring for the confirmed upstream bug.
+    df = _genomicranges_to_pandas_safe(gr)
     return make_ensembl_genes(
         df,
         organism=organism,
