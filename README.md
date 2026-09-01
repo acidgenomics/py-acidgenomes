@@ -4,26 +4,18 @@ Toolkit for downloading and processing genome annotations.
 
 ## Installation
 
-This is a [Python][] package hosted at [python.acidgenomics.com][].
+This is a [Python][] package hosted on [PyPI][] as `acidgenomics-acidgenomes`.
+The import name is unchanged: `acidgenomes`.
 We recommend using [uv][] to install.
 
 ```sh
-uv pip install \
-    --index-url 'https://python.acidgenomics.com/simple/' \
-    acidgenomes
+uv add acidgenomics-acidgenomes
 ```
 
-Or add the index to your project's `pyproject.toml`:
-
-```toml
-[[tool.uv.index]]
-url = "https://python.acidgenomics.com/simple/"
-```
-
-Then install:
+Or with [pip][]:
 
 ```sh
-uv add acidgenomes
+pip install acidgenomics-acidgenomes
 ```
 
 ## Quick start
@@ -75,8 +67,9 @@ ag.map_gene_names_to_hgnc(["TP53", "BRCA1"])
 ag.update_gene_symbols(["ZCCHC11"], organism="Homo sapiens")
 ```
 
+[pip]: https://pip.pypa.io/
+[pypi]: https://pypi.org/project/acidgenomics-acidgenomes/
 [python]: https://www.python.org/
-[python.acidgenomics.com]: https://python.acidgenomics.com
 [uv]: https://docs.astral.sh/uv/
 
 

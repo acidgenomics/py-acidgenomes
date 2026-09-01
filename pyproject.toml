@@ -3,7 +3,7 @@ requires = ["uv_build>=0.11,<1"]
 build-backend = "uv_build"
 
 [project]
-name = "acidgenomes"
+name = "acidgenomics-acidgenomes"
 version = "0.2.0"
 description = "Toolkit for downloading and processing genome annotations."
 readme = "README.md"
@@ -175,6 +175,13 @@ exclude = [".venv", "**/__pycache__", "**/.*", "tests"]
 
 [tool.ty.terminal]
 error-on-warning = true
+
+[tool.uv]
+package = true
+
+[tool.uv.build-backend]
+module-name = "acidgenomes"
+module-root = "src"
 
 [tool.bumpver]
 commit = true

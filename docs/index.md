@@ -8,26 +8,18 @@ plus reference datasets (HGNC, MGI, NCBI gene info) and gene-name mapping utilit
 
 ## Installation
 
-This package is hosted at [python.acidgenomics.com](https://python.acidgenomics.com/).
+This package is hosted on [PyPI](https://pypi.org/project/acidgenomics-acidgenomes/)
+as `acidgenomics-acidgenomes`. The import name is unchanged: `acidgenomes`.
 We recommend using [uv](https://docs.astral.sh/uv/) to install.
 
 ```sh
-uv pip install \
-    --index-url 'https://python.acidgenomics.com/simple/' \
-    acidgenomes
+uv add acidgenomics-acidgenomes
 ```
 
-Or add the index to your project's `pyproject.toml`:
-
-```toml
-[[tool.uv.index]]
-url = "https://python.acidgenomics.com/simple/"
-```
-
-Then install:
+Or with [pip](https://pip.pypa.io/):
 
 ```sh
-uv add acidgenomes
+pip install acidgenomics-acidgenomes
 ```
 
 ## Detecting organisms and versions

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1 (2026-09-01)
+
+### Changes
+
+- Rename the PyPI distribution to `acidgenomics-acidgenomes`. The import name is
+  unchanged: `import acidgenomes as ag` still works.
+- Publish to PyPI instead of `python.acidgenomics.com`.
+- Pin `[tool.uv.build-backend] module-name = "acidgenomes"` explicitly, since the
+  build backend's default module name now derives from the distribution name
+  (`acidgenomics_acidgenomes`), not the import name.
+
 ## 0.2.0 (2026-08-21)
 
 ### Bug Fixes
