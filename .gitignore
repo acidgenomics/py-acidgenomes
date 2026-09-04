@@ -9,3 +9,6 @@ docs/reference/generated/
 # The global core.excludesFile ignores *.gtf; these are hand-authored test fixtures.
 !tests/fixtures/
 !tests/fixtures/*.gtf
+
+# Pins only this machine's dev-tool versions; not needed by consumers.
+uv.lock
