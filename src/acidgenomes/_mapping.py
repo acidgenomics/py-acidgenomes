@@ -313,10 +313,10 @@ def map_ensembl_release_to_url(release: int | None = None) -> str:
         Archive site URL for the requested release, or the current site
         URL if ``release`` is ``None``.
     """
-    current = "https://useast.ensembl.org"
+    current = "https://rest.ensembl.org"
     if release is None:
         return current
-    url = "https://useast.ensembl.org/info/website/archives/index.html"
+    url = "https://www.ensembl.org/info/website/archives/index.html"
     text = fetch_text(url)
     pattern = r"Ensembl\s+(\d+)\D+?([A-Za-z]{3})\s+(\d{4})"
     for m in re.finditer(pattern, text):

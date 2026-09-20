@@ -10,7 +10,7 @@ provider-specific feature extraction.
 from pathlib import Path
 from typing import Literal
 
-from genomicranges import GenomicRanges
+from genomicranges.GenomicRanges import GenomicRanges
 
 from acidgenomes.gff._convert import dataframe_to_granges
 from acidgenomes.gff._metadata import get_gff_metadata

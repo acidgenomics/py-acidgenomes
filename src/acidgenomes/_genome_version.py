@@ -26,12 +26,12 @@ def current_ensembl_version() -> int:
     >>> current_ensembl_version()  # doctest: +SKIP
     112
     """
-    url = "https://ftp.ensembl.org/pub/current_README"
-    text = fetch_text(url)
-    m = re.search(r"Ensembl Release\s+(\d+)", text, re.IGNORECASE)
+    url = "https://ftp.ensembl.org/pub/VERSION"
+    text = fetch_text(url).strip()
+    m = re.fullmatch(r"\d+", text)
     if m is None:
-        raise RuntimeError("Failed to parse Ensembl release from README.")
-    return int(m.group(1))
+        raise RuntimeError("Failed to parse Ensembl release from VERSION.")
+    return int(text)
 
 
 def current_gencode_version(organism: str = "Homo sapiens") -> str:
