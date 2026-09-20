@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0 (2026-09-20)
+
+### Bug Fixes
+
+- Restore automatic Ensembl release detection using the machine-readable
+  `VERSION` endpoint after Ensembl removed `current_README`.
+- Replace the unavailable `useast.ensembl.org` endpoint with the canonical
+  REST and website hosts for current and archived Ensembl queries.
+- Support current `genomicranges` releases, which no longer re-export
+  `GenomicRanges` from the package root and have fixed the historical
+  `to_pandas()` row-count defect.
+
+### Tests
+
+- Add regression coverage for the Ensembl release endpoint, release-pinned
+  HTTPS downloads, and archive URL resolution.
+
 ## 0.2.1 (2026-09-01)
 
 ### Changes

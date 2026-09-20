@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
-from genomicranges import GenomicRanges
+from genomicranges.GenomicRanges import GenomicRanges
 
 from acidgenomes.gff._convert import dataframe_to_granges
 

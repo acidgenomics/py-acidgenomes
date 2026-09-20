@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 from biocframe import BiocFrame
-from genomicranges import GenomicRanges
+from genomicranges.GenomicRanges import GenomicRanges
 from iranges import IRanges
 
 

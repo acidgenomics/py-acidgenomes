@@ -37,6 +37,7 @@ ag.strip_gene_versions(["ENSG00000000003.14"])
 
 # Build a transcript-to-gene mapping
 import pandas as pd
+
 df = pd.DataFrame({"tx_id": ["ENST001", "ENST002"], "gene_id": ["ENSG001", "ENSG002"]})
 t2g = ag.make_tx_to_gene(df)
 

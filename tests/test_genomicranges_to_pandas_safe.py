@@ -35,8 +35,8 @@ def _make_gene_df() -> pd.DataFrame:
     )
 
 
-def test_upstream_to_pandas_reproduces_the_bug() -> None:
-    """Confirm the bug is real: GenomicRanges.to_pandas() doubles the rows.
+def test_upstream_to_pandas_handles_supported_versions() -> None:
+    """Account for the known behavior of each supported genomicranges version.
 
     Uses dataframe_to_granges -- the real construction path
     make_granges_from_gff uses for every provider -- not a hand-built
@@ -44,10 +44,11 @@ def test_upstream_to_pandas_reproduces_the_bug() -> None:
     """
     df = _make_gene_df()
     gr = dataframe_to_granges(df, names_col="gene_id")
-    buggy = gr.to_pandas()
-    assert len(buggy) == 2 * len(gr)
-    assert buggy["gene_id"].isna().sum() == len(gr)
-    assert buggy["seqnames"].isna().sum() == len(gr)
+    out = gr.to_pandas()
+    assert len(out) in {len(gr), 2 * len(gr)}
+    if len(out) == 2 * len(gr):
+        assert out["gene_id"].isna().sum() == len(gr)
+        assert out["seqnames"].isna().sum() == len(gr)
 
 
 def test_safe_conversion_returns_one_row_per_range() -> None:
