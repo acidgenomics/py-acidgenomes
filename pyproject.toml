@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "acidgenomics-acidgenomes"
-version = "0.3.0"
+version = "0.4.0"
 description = "Toolkit for downloading and processing genome annotations."
 readme = "README.md"
 license = "Apache-2.0"
@@ -133,6 +133,7 @@ relative_files = true
 source = ["src/acidgenomes"]
 
 [tool.interrogate]
+exclude = ["tests"]
 fail-under = 80
 ignore-init-method = true
 ignore-init-module = true
@@ -186,7 +187,7 @@ module-root = "src"
 [tool.bumpver]
 commit = true
 commit_message = "Bump to {new_version}."
-current_version = "v0.3.0"
+current_version = "v0.4.0"
 push = false
 tag = false
 tag_message = "{new_version}"
