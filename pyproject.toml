@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "acidgenomics-acidgenomes"
-version = "0.3.0"
+version = "0.4.0"
 description = "Toolkit for downloading and processing genome annotations."
 readme = "README.md"
 license = "Apache-2.0"
@@ -187,7 +187,7 @@ module-root = "src"
 [tool.bumpver]
 commit = true
 commit_message = "Bump to {new_version}."
-current_version = "v0.3.0"
+current_version = "v0.4.0"
 push = false
 tag = false
 tag_message = "{new_version}"
