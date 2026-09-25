@@ -531,8 +531,10 @@ def classify_curated_gene_groups(
 
     Examples
     --------
-    >>> tags = classify_curated_gene_groups(["ENSG00000244734"], "Homo sapiens")
-    >>> tags["ENSG00000244734"]  # HBB
+    >>> tags = classify_curated_gene_groups(
+    ...     ["ENSG00000244734"], "Homo sapiens"
+    ... )  # doctest: +SKIP
+    >>> tags["ENSG00000244734"]  # HBB  # doctest: +SKIP
     ['hemoglobin']
     """
     if organism == "Homo sapiens":

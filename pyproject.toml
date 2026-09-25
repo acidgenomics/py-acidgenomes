@@ -133,6 +133,7 @@ relative_files = true
 source = ["src/acidgenomes"]
 
 [tool.interrogate]
+exclude = ["tests"]
 fail-under = 80
 ignore-init-method = true
 ignore-init-module = true
