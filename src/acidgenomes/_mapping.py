@@ -3,7 +3,7 @@
 Ported from ``mapGeneNamesToEnsembl.R``, ``mapGeneNamesToHgnc.R``,
 ``mapGeneNamesToNcbi.R``, ``mapGencodeToEnsembl.R``,
 ``mapEnsemblReleaseToUrl.R``, ``importTxToGene.R``,
-``mapHumanOrthologs.R``.
+``mapHumanOrthologs.R``, ``classifyCuratedGeneGroups.R``.
 """
 
 from __future__ import annotations
@@ -15,9 +15,11 @@ import pandas as pd
 import requests
 
 from acidgenomes._cache import fetch_text
-from acidgenomes._classes import Hgnc, NcbiGeneInfo, TxToGene
+from acidgenomes._classes import Hgnc, JaxHumanToMouse, Mgi, NcbiGeneInfo, TxToGene
 from acidgenomes._constructors import (
     make_hgnc,
+    make_jax_human_to_mouse,
+    make_mgi,
     make_ncbi_gene_info,
     make_tx_to_gene,
 )
@@ -449,6 +451,231 @@ def _fetch_ortholog(
                 break
     except Exception:
         logger.warning("Failed to fetch orthologs for %s", gene_id)
+
+
+# -------------------------------------------------------------------------
+# classifyCuratedGeneGroups
+# -------------------------------------------------------------------------
+
+# HGNC gene_group_id -> curated tag. Verified live against genenames.org
+# 2026-09-24 (hgnc_complete_set.txt): 728 "S ribosomal proteins", 729
+# "L ribosomal proteins" (cytoplasmic large/small subunit), 646
+# "Mitochondrial ribosomal proteins", 940 "Hemoglobin subunits". The
+# "Ribosomal protein S6 kinase family" (1156/1691/3524) is a distinct HGNC
+# family (RPS6KA*/RPS6KB*) and is deliberately absent from this map -- do
+# not add it. A sibling R package carries the identical constant and
+# function as a hand-ported twin; a change here must land there too, in
+# the same release.
+_CURATED_GENE_GROUP_IDS: dict[int, str] = {
+    728: "ribo_cyto",
+    729: "ribo_cyto",
+    646: "ribo_mito",
+    940: "hemoglobin",
+}
+
+
+def classify_curated_gene_groups(
+    ensembl_gene_ids: list[str],
+    organism: str,
+    *,
+    hgnc: Hgnc | None = None,
+    jax: JaxHumanToMouse | None = None,
+    mgi: Mgi | None = None,
+) -> dict[str, list[str]]:
+    """Classify genes into curated HGNC gene-group tags.
+
+    Tags each gene ``"ribo_cyto"`` (cytoplasmic ribosomal protein),
+    ``"ribo_mito"`` (mitochondrial ribosomal protein), ``"hemoglobin"``
+    (hemoglobin subunit), or none of these. Tags are sourced from HGNC's own
+    curated ``gene_group`` assignments, never a symbol regex; a gene not in
+    any curated group gets an empty list, not an omitted key.
+
+    For Mus musculus, human HGNC groups are propagated via a fully
+    identifier-based chain (HGNC ``hgnc_id`` -> JAX ortholog
+    ``mouse_mgi_id`` -> MGI ``ensembl_gene_id``), with no gene-symbol
+    matching at any step.
+
+    This is deliberately independent of ``broad_class``
+    (:func:`._add_broad_class`): ``broad_class`` is single-valued and every
+    ribosomal/hemoglobin gene already has a value from it (``"coding"``,
+    ``"pseudo"``, etc). Do not fold these tags into ``broad_class``.
+
+    Parameters
+    ----------
+    ensembl_gene_ids : list[str]
+        Ensembl gene identifiers to classify.
+    organism : str
+        Latin organism name. Only ``"Homo sapiens"`` and ``"Mus musculus"``
+        are supported.
+    hgnc : Hgnc or None
+        HGNC reference dataset. Downloaded via :func:`make_hgnc` if
+        ``None``.
+    jax : JaxHumanToMouse or None
+        JAX human-to-mouse ortholog dataset. Downloaded via
+        :func:`make_jax_human_to_mouse` if ``None``. Ignored for
+        ``"Homo sapiens"``.
+    mgi : Mgi or None
+        MGI reference dataset. Downloaded via :func:`make_mgi` if ``None``.
+        Ignored for ``"Homo sapiens"``.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        Mapping of each input Ensembl gene ID to its curated tag list
+        (``[]`` if none).
+
+    Raises
+    ------
+    ValueError
+        If ``organism`` is not ``"Homo sapiens"`` or ``"Mus musculus"``.
+
+    Examples
+    --------
+    >>> tags = classify_curated_gene_groups(["ENSG00000244734"], "Homo sapiens")
+    >>> tags["ENSG00000244734"]  # HBB
+    ['hemoglobin']
+    """
+    if organism == "Homo sapiens":
+        tags_by_ensembl_id = _hgnc_curated_tags_by_ensembl_id(hgnc)
+    elif organism == "Mus musculus":
+        tags_by_ensembl_id = _mouse_curated_tags_by_ensembl_id(hgnc, jax, mgi)
+    else:
+        raise ValueError(
+            f"Unsupported organism '{organism}'; "
+            "only 'Homo sapiens' and 'Mus musculus' are supported."
+        )
+    return {gid: tags_by_ensembl_id.get(gid, []) for gid in ensembl_gene_ids}
+
+
+def _hgnc_curated_tags_by_ensembl_id(hgnc: Hgnc | None) -> dict[str, list[str]]:
+    """Build human Ensembl gene ID -> curated tag list from HGNC gene groups."""
+    if hgnc is None:
+        hgnc = make_hgnc()
+    df = hgnc.data
+    for col in ("ensembl_gene_id", "gene_group_id"):
+        if col not in df.columns:
+            raise ValueError(f"HGNC data missing column '{col}'.")
+    out: dict[str, list[str]] = {}
+    for _, row in df.iterrows():
+        ensembl_id = row.get("ensembl_gene_id")
+        group_ids = row.get("gene_group_id")
+        if ensembl_id is None or group_ids is None:
+            continue
+        if bool(pd.isna(ensembl_id)) or bool(pd.isna(group_ids)):
+            continue
+        tags = _tags_for_group_id_string(str(group_ids))
+        if tags:
+            out[str(ensembl_id)] = tags
+    return out
+
+
+def _tags_for_group_id_string(group_ids: str) -> list[str]:
+    """Resolve a pipe-delimited HGNC ``gene_group_id`` string to curated tags."""
+    tags: list[str] = []
+    for entry in group_ids.split("|"):
+        cleaned = entry.strip()
+        if not cleaned:
+            continue
+        try:
+            gid = int(cleaned)
+        except ValueError:
+            continue
+        tag = _CURATED_GENE_GROUP_IDS.get(gid)
+        if tag is not None and tag not in tags:
+            tags.append(tag)
+    return tags
+
+
+def _tags_by_hgnc_id(hgnc_df: pd.DataFrame) -> dict[int, list[str]]:
+    """Build human HGNC ID -> curated tag list from HGNC gene groups."""
+    for col in ("hgnc_id", "gene_group_id"):
+        if col not in hgnc_df.columns:
+            raise ValueError(f"HGNC data missing column '{col}'.")
+    out: dict[int, list[str]] = {}
+    for _, row in hgnc_df.iterrows():
+        hgnc_id = row.get("hgnc_id")
+        group_ids = row.get("gene_group_id")
+        if hgnc_id is None or group_ids is None:
+            continue
+        if bool(pd.isna(hgnc_id)) or bool(pd.isna(group_ids)):
+            continue
+        tags = _tags_for_group_id_string(str(group_ids))
+        if tags:
+            out[int(hgnc_id)] = tags
+    return out
+
+
+def _mouse_mgi_ids_by_human_hgnc_id(jax_df: pd.DataFrame) -> dict[int, set[int]]:
+    """Build human HGNC ID -> mouse MGI ID set from the JAX ortholog table.
+
+    A human gene can have more than one mouse paralog (e.g. hemoglobin's
+    Hbb-bh0/bh1/bh2/bh3/y expansion) -- every mouse MGI ID reachable from a
+    given human HGNC ID is collected, not just the first/last one seen.
+    """
+    for col in ("human_hgnc_id", "mouse_mgi_id"):
+        if col not in jax_df.columns:
+            raise ValueError(f"JAX human-to-mouse data missing column '{col}'.")
+    out: dict[int, set[int]] = {}
+    for _, row in jax_df.iterrows():
+        human_hgnc_id = row.get("human_hgnc_id")
+        mouse_mgi_id = row.get("mouse_mgi_id")
+        if human_hgnc_id is None or mouse_mgi_id is None:
+            continue
+        if bool(pd.isna(human_hgnc_id)) or bool(pd.isna(mouse_mgi_id)):
+            continue
+        out.setdefault(int(human_hgnc_id), set()).add(int(mouse_mgi_id))
+    return out
+
+
+def _mouse_ensembl_id_by_mgi_id(mgi_df: pd.DataFrame) -> dict[int, str]:
+    """Build mouse MGI ID -> Ensembl gene ID from the MGI gene-model report."""
+    for col in ("mgi_accession_id", "ensembl_gene_id"):
+        if col not in mgi_df.columns:
+            raise ValueError(f"MGI data missing column '{col}'.")
+    out: dict[int, str] = {}
+    for _, row in mgi_df.iterrows():
+        mgi_id = row.get("mgi_accession_id")
+        ensembl_id = row.get("ensembl_gene_id")
+        if mgi_id is None or ensembl_id is None:
+            continue
+        if bool(pd.isna(mgi_id)) or bool(pd.isna(ensembl_id)):
+            continue
+        out[int(mgi_id)] = str(ensembl_id)
+    return out
+
+
+def _mouse_curated_tags_by_ensembl_id(
+    hgnc: Hgnc | None,
+    jax: JaxHumanToMouse | None,
+    mgi: Mgi | None,
+) -> dict[str, list[str]]:
+    """Propagate human HGNC curated tags to mouse Ensembl gene IDs.
+
+    Fully identifier-based: HGNC ``hgnc_id`` -> JAX ``human_hgnc_id`` /
+    ``mouse_mgi_id`` -> MGI ``mgi_accession_id`` / ``ensembl_gene_id``. No
+    gene-symbol matching at any step, unlike a naive mouse-symbol regex
+    (which silently returns zero matches -- hemoglobin symbols are
+    hyphenated in mouse, e.g. ``Hba-a1``, and share no substring with any
+    human-derived pattern).
+    """
+    if hgnc is None:
+        hgnc = make_hgnc()
+    if jax is None:
+        jax = make_jax_human_to_mouse(unique=False)
+    if mgi is None:
+        mgi = make_mgi()
+
+    tags_by_hgnc_id = _tags_by_hgnc_id(hgnc.data)
+    mgi_ids_by_hgnc_id = _mouse_mgi_ids_by_human_hgnc_id(jax.data)
+    ensembl_id_by_mgi_id = _mouse_ensembl_id_by_mgi_id(mgi.data)
+
+    out: dict[str, list[str]] = {}
+    for hgnc_id, tags in tags_by_hgnc_id.items():
+        for mgi_id in mgi_ids_by_hgnc_id.get(hgnc_id, ()):
+            ensembl_id = ensembl_id_by_mgi_id.get(mgi_id)
+            if ensembl_id is not None:
+                out[ensembl_id] = tags
+    return out
 
 
 # -------------------------------------------------------------------------

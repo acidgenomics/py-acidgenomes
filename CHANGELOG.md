@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### New Features
+
+- Add `classify_curated_gene_groups()`, tagging genes into curated HGNC
+  gene groups (`ribo_cyto`, `ribo_mito`, `hemoglobin`) sourced from HGNC's
+  own `gene_group`/`gene_group_id` assignments, never a symbol regex. For
+  Mus musculus, human HGNC groups are propagated via a fully
+  identifier-based chain (HGNC `hgnc_id` -> JAX ortholog `mouse_mgi_id` ->
+  MGI `ensembl_gene_id`), with no gene-symbol matching at any step. This is
+  deliberately independent of `broad_class`, which is single-valued and
+  already assigns every ribosomal/hemoglobin gene a value (`coding`,
+  `pseudo`, etc).
+
+### Bug Fixes
+
+- Fix `make_jax_human_to_mouse()` silently renaming its own documented
+  `mouse_mgi_id` column to `mouse_mgi_id_y` (with a meaningless,
+  always-`NaN` `mouse_mgi_id_x` alongside it). The raw JAX report stacks
+  one column per field across both species' rows; `_merge_jax_species()`
+  never dropped the human-side copy before merging in the mouse-side
+  value, so pandas resolved the name collision with its default `_x`/`_y`
+  suffixing instead of the plain column name every consumer expects.
+
 ## 0.3.0 (2026-09-20)
 
 ### Bug Fixes

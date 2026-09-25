@@ -374,6 +374,13 @@ def _merge_jax_species(df: pd.DataFrame) -> pd.DataFrame:
     ]:
         if c in mm.columns:
             mm_cols.append(c)
+    # The raw (pre-split) JAX report carries a single column per field
+    # (e.g. "mouse_mgi_id") stacked across both species' rows, always NaN
+    # on the human rows. Drop that meaningless human-side copy before
+    # merging -- otherwise pandas silently resolves the name collision by
+    # suffixing to "..._x"/"..._y" instead of the plain name every
+    # consumer expects.
+    hs = hs.drop(columns=[c for c in mm_cols if c != merge_col and c in hs.columns])
     out = hs.merge(mm[mm_cols], on=merge_col, how="inner")
     return out.dropna(subset=["human_gene_name", "mouse_gene_name"])
 

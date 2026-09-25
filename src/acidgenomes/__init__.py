@@ -70,6 +70,7 @@ from acidgenomes._go_terms import go_terms_per_gene_name, map_go_terms
 
 # ---- Mapping ----------------------------------------------------------------
 from acidgenomes._mapping import (
+    classify_curated_gene_groups,
     import_tx_to_gene,
     map_ensembl_release_to_url,
     map_gencode_to_ensembl,
@@ -131,6 +132,7 @@ __all__ = [
     "WormbaseExons",
     "WormbaseGenes",
     "WormbaseTranscripts",
+    "classify_curated_gene_groups",
     "current_ensembl_genome_build",
     "current_ensembl_version",
     "current_flybase_version",
